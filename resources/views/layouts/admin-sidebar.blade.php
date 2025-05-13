@@ -1,28 +1,3 @@
-{{-- <!-- Sidebar -->
-<aside id="sidebar"
-    class="md:absolute z-10 lg:fixed xl:fixed 2xl:fixed top-0 left-0 w-20 h-screen bg-white dark:bg-gray-800 shadow-md transition-all duration-300 flex flex-col pt-16">
-    <ul class="space-y-2">
-        <li class="flex items-center gap-4 p-4 hover:bg-gray-100 dark:hover:bg-gray-700">
-            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zM8 6a2 2 0 114 0v1H8V6z" />
-            </svg>
-            <span class="menu-text hidden text-md font-medium text-gray-700 dark:text-gray-300">User</span>
-        </li>
-
-        <li class="flex items-center gap-4 p-4 hover:bg-gray-100 dark:hover:bg-gray-700">
-            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zM8 6a2 2 0 114 0v1H8V6z" />
-            </svg>
-            <span class="menu-text hidden text-md font-medium text-gray-700 dark:text-gray-300">User</span>
-        </li>
-    </ul>
-</aside> --}}
-
-
 <aside id="sidebar"
     class="fixed top-0 left-0 z-40 w-18 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
     aria-label="Sidebar">
