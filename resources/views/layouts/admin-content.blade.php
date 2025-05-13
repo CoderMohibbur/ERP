@@ -1,4 +1,4 @@
-<div id="content" class=" mx-auto px-8 pt-6 transition-all duration-300">
+<div id="content" class="w-full mx-auto px-8 pt-6 transition-all duration-300">
 
   <div class="p-4 border-2  border-gray-200 border-dashed rounded-lg dark:border-gray-700">
 
