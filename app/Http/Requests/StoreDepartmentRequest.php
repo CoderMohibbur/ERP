@@ -11,18 +11,14 @@ class StoreDepartmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true; // যদি Auth ব্যবহার করেন তাহলে এখানে শর্ত দিতে পারেন
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
+    
     public function rules(): array
     {
         return [
-            //
+            'name' => ['required', 'string', 'max:100', 'unique:departments,name'],
         ];
     }
 }
