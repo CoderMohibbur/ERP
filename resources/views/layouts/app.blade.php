@@ -94,29 +94,29 @@
 
 
 <body class="font-sans antialiased">
-    <x-banner />
+    {{-- <x-banner /> --}}
 
     <div class="min-h-screen bg-gray-100">
         @include('layouts.admin-nav')
         <div class="flex pt-16 overflow-hidden bg-gray-50 dark:bg-gray-900">
             @include('layouts.admin-sidebar')
-            @include('layouts.admin-content')
-
         </div>
 
-        {{-- <!-- Page Heading -->
-        @if (isset($header))
-        <header class="bg-white shadow">
-            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                {{ $header }}
+        <!-- Page Heading -->
+        <div id="content" class="mx-auto px-8 pt-6 transition-all duration-300">
+            <div class="p-4 border-2  border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+                @if (isset($header))
+                    <header>
+                        {{ $header }}
+                    </header>
+                @endif
+                
+                <!-- Page Content -->
+                <main>
+                    {{ $slot }}
+                </main>
             </div>
-        </header>
-        @endif
-
-        <!-- Page Content -->
-        <main>
-            {{ $slot }}
-        </main> --}}
+        </div>
     </div>
 
     @stack('modals')
