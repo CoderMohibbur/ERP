@@ -27,4 +27,5 @@
             </div>
         </form>
     </div>
+    @include('layouts.admin-footer')
 </x-app-layout>

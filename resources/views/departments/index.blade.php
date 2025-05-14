@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="p-6 sm:p-8 lg:p-10">
+    <div class="">
         <x-success-message />
         
         <div class="flex items-center justify-between mb-6">
