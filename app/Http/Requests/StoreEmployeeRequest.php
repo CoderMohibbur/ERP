@@ -19,6 +19,9 @@ class StoreEmployeeRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20'],
             'department_id' => ['required', 'exists:departments,id'],
             'designation_id' => ['required', 'exists:designations,id'],
+            'join_date' => ['required', 'date'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+
         ];
     }
 }

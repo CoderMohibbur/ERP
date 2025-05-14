@@ -12,4 +12,10 @@ class Attendance extends Model
     {
         return $this->belongsTo(Employee::class);
     }
+
+    // app/Models/Attendance.php
+
+    protected $casts = [
+        'date' => 'date',
+    ];
 }

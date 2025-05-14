@@ -48,4 +48,10 @@ class Employee extends Model
     {
         return $this->belongsToMany(Task::class, 'task_employee');
     }
+
+    // Accessor for formatted join date 
+    protected $casts = [
+    'join_date' => 'date',
+];
+
 }

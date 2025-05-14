@@ -34,13 +34,20 @@ class EmployeeController extends Controller
     /**
      * Store a newly created employee in storage.
      */
-    public function store(StoreEmployeeRequest $request): RedirectResponse
-    {
-        Employee::create($request->validated());
+public function store(StoreEmployeeRequest $request): RedirectResponse
+{
+    $data = $request->validated();
 
-        return redirect()->route('employees.index')
-                         ->with('success', 'Employee created successfully.');
+    if ($request->hasFile('photo')) {
+        $data['photo'] = $request->file('photo')->store('uploads/employees', 'public');
     }
+
+    Employee::create($data);
+
+    return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
+}
+
+
 
     /**
      * Show the form for editing the specified employee.
@@ -57,11 +64,17 @@ class EmployeeController extends Controller
      */
     public function update(UpdateEmployeeRequest $request, Employee $employee): RedirectResponse
     {
-        $employee->update($request->validated());
+        $data = $request->validated();
 
-        return redirect()->route('employees.index')
-                         ->with('success', 'Employee updated successfully.');
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo')->store('uploads/employees', 'public');
+        }
+
+        $employee->update($data);
+
+        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
+
 
     /**
      * Remove the specified employee from storage.
