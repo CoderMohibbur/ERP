@@ -96,21 +96,21 @@
 <body class="font-sans antialiased">
     {{-- <x-banner /> --}}
 
-    <div class="min-h-screen bg-gray-100">
+    <div class="min-h-screen bg-gray-100  dark:bg-gray-900">
         @include('layouts.admin-nav')
         <div class="flex pt-16 overflow-hidden bg-gray-50 dark:bg-gray-900">
             @include('layouts.admin-sidebar')
         </div>
 
         <!-- Page Heading -->
-        <div id="content" class="mx-auto px-8 pt-6 transition-all duration-300">
+        <div id="content" class="mx-auto px-8 pt-6 transition-all duration-300 dark:border-gray-900">
             <div class="p-4 border-2  border-gray-200 border-dashed rounded-lg dark:border-gray-700">
                 @if (isset($header))
                     <header>
                         {{ $header }}
                     </header>
                 @endif
-                
+
                 <!-- Page Content -->
                 <main>
                     {{ $slot }}
