@@ -15,9 +15,9 @@
                        class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
             </div>
 
-            <div class="flex justify-end mt-6">
+            <div class="flex justify-end items-center mt-6">
                 <a href="{{ route('departments.index') }}"
-                   class="mr-3 text-gray-600 dark:text-gray-300 hover:underline">
+                   class="mr-3 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:dark:text-red-500">
                     Cancel
                 </a>
                 <button type="submit"
