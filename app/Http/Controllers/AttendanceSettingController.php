@@ -2,63 +2,69 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\AttendanceSetting;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreAttendanceSettingRequest;
+use App\Http\Requests\UpdateAttendanceSettingRequest;
 
 class AttendanceSettingController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the attendance settings.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $settings = AttendanceSetting::latest()->paginate(10);
+        return view('attendance-settings.index', compact('settings'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new attendance setting.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        return view('attendance-settings.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created attendance setting in storage.
      */
-    public function store(Request $request)
+    public function store(StoreAttendanceSettingRequest $request): RedirectResponse
     {
-        //
+        AttendanceSetting::create($request->validated());
+
+        return redirect()->route('attendance-settings.index')
+                         ->with('success', 'Attendance setting created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified attendance setting.
      */
-    public function show(string $id)
+    public function edit(AttendanceSetting $attendanceSetting): View
     {
-        //
+        return view('attendance-settings.edit', compact('attendanceSetting'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified attendance setting in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateAttendanceSettingRequest $request, AttendanceSetting $attendanceSetting): RedirectResponse
     {
-        //
+        $attendanceSetting->update($request->validated());
+
+        return redirect()->route('attendance-settings.index')
+                         ->with('success', 'Attendance setting updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified attendance setting from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(AttendanceSetting $attendanceSetting): RedirectResponse
     {
-        //
-    }
+        $attendanceSetting->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('attendance-settings.index')
+                         ->with('success', 'Attendance setting deleted successfully.');
     }
 }

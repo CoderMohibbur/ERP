@@ -2,63 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Attendance;
+use App\Models\Employee;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreAttendanceRequest;
+use App\Http\Requests\UpdateAttendanceRequest;
 
 class AttendanceController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the attendances.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $attendances = Attendance::with('employee')->latest()->paginate(10);
+        return view('attendances.index', compact('attendances'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new attendance.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        $employees = Employee::pluck('name', 'id');
+        return view('attendances.create', compact('employees'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created attendance in storage.
      */
-    public function store(Request $request)
+    public function store(StoreAttendanceRequest $request): RedirectResponse
     {
-        //
+        Attendance::create($request->validated());
+
+        return redirect()->route('attendances.index')
+                         ->with('success', 'Attendance record created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified attendance.
      */
-    public function show(string $id)
+    public function edit(Attendance $attendance): View
     {
-        //
+        $employees = Employee::pluck('name', 'id');
+        return view('attendances.edit', compact('attendance', 'employees'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified attendance in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateAttendanceRequest $request, Attendance $attendance): RedirectResponse
     {
-        //
+        $attendance->update($request->validated());
+
+        return redirect()->route('attendances.index')
+                         ->with('success', 'Attendance record updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified attendance from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(Attendance $attendance): RedirectResponse
     {
-        //
-    }
+        $attendance->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('attendances.index')
+                         ->with('success', 'Attendance record deleted successfully.');
     }
 }

@@ -2,63 +2,75 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Employee;
+use App\Models\Department;
+use App\Models\Designation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreEmployeeRequest;
+use App\Http\Requests\UpdateEmployeeRequest;
 
 class EmployeeController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the employees.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $employees = Employee::with(['department', 'designation'])->latest()->paginate(10);
+        return view('employees.index', compact('employees'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new employee.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        $departments = Department::pluck('name', 'id');
+        $designations = Designation::pluck('name', 'id');
+        return view('employees.create', compact('departments', 'designations'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created employee in storage.
      */
-    public function store(Request $request)
+    public function store(StoreEmployeeRequest $request): RedirectResponse
     {
-        //
+        Employee::create($request->validated());
+
+        return redirect()->route('employees.index')
+                         ->with('success', 'Employee created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified employee.
      */
-    public function show(string $id)
+    public function edit(Employee $employee): View
     {
-        //
+        $departments = Department::pluck('name', 'id');
+        $designations = Designation::pluck('name', 'id');
+        return view('employees.edit', compact('employee', 'departments', 'designations'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified employee in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateEmployeeRequest $request, Employee $employee): RedirectResponse
     {
-        //
+        $employee->update($request->validated());
+
+        return redirect()->route('employees.index')
+                         ->with('success', 'Employee updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified employee from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(Employee $employee): RedirectResponse
     {
-        //
-    }
+        $employee->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('employees.index')
+                         ->with('success', 'Employee deleted successfully.');
     }
 }
