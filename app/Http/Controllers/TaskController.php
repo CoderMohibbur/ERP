@@ -2,63 +2,75 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Task;
+use App\Models\Project;
+use App\Models\Employee;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 
 class TaskController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the tasks.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $tasks = Task::with(['project', 'assignee'])->latest()->paginate(10);
+        return view('tasks.index', compact('tasks'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new task.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        $projects = Project::pluck('name', 'id');
+        $employees = Employee::pluck('name', 'id');
+        return view('tasks.create', compact('projects', 'employees'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created task in storage.
      */
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request): RedirectResponse
     {
-        //
+        Task::create($request->validated());
+
+        return redirect()->route('tasks.index')
+                         ->with('success', 'Task created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified task.
      */
-    public function show(string $id)
+    public function edit(Task $task): View
     {
-        //
+        $projects = Project::pluck('name', 'id');
+        $employees = Employee::pluck('name', 'id');
+        return view('tasks.edit', compact('task', 'projects', 'employees'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified task in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateTaskRequest $request, Task $task): RedirectResponse
     {
-        //
+        $task->update($request->validated());
+
+        return redirect()->route('tasks.index')
+                         ->with('success', 'Task updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified task from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(Task $task): RedirectResponse
     {
-        //
-    }
+        $task->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('tasks.index')
+                         ->with('success', 'Task deleted successfully.');
     }
 }

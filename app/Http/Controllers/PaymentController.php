@@ -2,63 +2,75 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Payment;
+use App\Models\Invoice;
+use App\Models\PaymentMethod;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StorePaymentRequest;
+use App\Http\Requests\UpdatePaymentRequest;
 
 class PaymentController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the payments.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $payments = Payment::with(['invoice', 'method'])->latest()->paginate(10);
+        return view('payments.index', compact('payments'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new payment.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        $invoices = Invoice::pluck('invoice_number', 'id');
+        $methods = PaymentMethod::pluck('name', 'id');
+        return view('payments.create', compact('invoices', 'methods'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created payment in storage.
      */
-    public function store(Request $request)
+    public function store(StorePaymentRequest $request): RedirectResponse
     {
-        //
+        Payment::create($request->validated());
+
+        return redirect()->route('payments.index')
+                         ->with('success', 'Payment recorded successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified payment.
      */
-    public function show(string $id)
+    public function edit(Payment $payment): View
     {
-        //
+        $invoices = Invoice::pluck('invoice_number', 'id');
+        $methods = PaymentMethod::pluck('name', 'id');
+        return view('payments.edit', compact('payment', 'invoices', 'methods'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified payment in storage.
      */
-    public function edit(string $id)
+    public function update(UpdatePaymentRequest $request, Payment $payment): RedirectResponse
     {
-        //
+        $payment->update($request->validated());
+
+        return redirect()->route('payments.index')
+                         ->with('success', 'Payment updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified payment from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(Payment $payment): RedirectResponse
     {
-        //
-    }
+        $payment->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('payments.index')
+                         ->with('success', 'Payment deleted successfully.');
     }
 }

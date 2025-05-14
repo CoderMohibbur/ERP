@@ -2,63 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Client;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreClientRequest;
+use App\Http\Requests\UpdateClientRequest;
 
 class ClientController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the clients.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $clients = Client::with('creator')->latest()->paginate(10);
+        return view('clients.index', compact('clients'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new client.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        return view('clients.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created client in storage.
      */
-    public function store(Request $request)
+    public function store(StoreClientRequest $request): RedirectResponse
     {
-        //
+        $data = $request->validated();
+        $data['created_by'] = auth()->id();
+        Client::create($data);
+
+        return redirect()->route('clients.index')
+                         ->with('success', 'Client created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified client.
      */
-    public function show(string $id)
+    public function edit(Client $client): View
     {
-        //
+        return view('clients.edit', compact('client'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified client in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateClientRequest $request, Client $client): RedirectResponse
     {
-        //
+        $client->update($request->validated());
+
+        return redirect()->route('clients.index')
+                         ->with('success', 'Client updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified client from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(Client $client): RedirectResponse
     {
-        //
-    }
+        $client->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('clients.index')
+                         ->with('success', 'Client deleted successfully.');
     }
 }
