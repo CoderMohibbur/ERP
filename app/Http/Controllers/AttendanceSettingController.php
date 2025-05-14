@@ -32,11 +32,21 @@ class AttendanceSettingController extends Controller
      */
     public function store(StoreAttendanceSettingRequest $request): RedirectResponse
     {
-        AttendanceSetting::create($request->validated());
+        AttendanceSetting::create([
+            'office_start'     => $request->office_start,
+            'start_time'       => $request->start_time,
+            'end_time'         => $request->end_time,
+            'grace_minutes'    => $request->grace_minutes,
+            'half_day_after'   => $request->half_day_after,
+            'working_days'     => $request->working_days,
+            'weekend_days'     => $request->weekend_days,
+            'note'             => $request->note,
+        ]);
 
         return redirect()->route('attendance-settings.index')
-                         ->with('success', 'Attendance setting created successfully.');
+            ->with('success', 'Attendance setting created successfully.');
     }
+
 
     /**
      * Show the form for editing the specified attendance setting.
@@ -51,11 +61,21 @@ class AttendanceSettingController extends Controller
      */
     public function update(UpdateAttendanceSettingRequest $request, AttendanceSetting $attendanceSetting): RedirectResponse
     {
-        $attendanceSetting->update($request->validated());
+        $attendanceSetting->update([
+            'office_start'     => $request->office_start,
+            'start_time'       => $request->start_time,
+            'end_time'         => $request->end_time,
+            'grace_minutes'    => $request->grace_minutes,
+            'half_day_after'   => $request->half_day_after,
+            'working_days'     => $request->working_days,
+            'weekend_days'     => $request->weekend_days,
+            'note'             => $request->note,
+        ]);
 
         return redirect()->route('attendance-settings.index')
-                         ->with('success', 'Attendance setting updated successfully.');
+            ->with('success', 'Attendance setting updated successfully.');
     }
+
 
     /**
      * Remove the specified attendance setting from storage.
@@ -65,6 +85,6 @@ class AttendanceSettingController extends Controller
         $attendanceSetting->delete();
 
         return redirect()->route('attendance-settings.index')
-                         ->with('success', 'Attendance setting deleted successfully.');
+            ->with('success', 'Attendance setting deleted successfully.');
     }
 }

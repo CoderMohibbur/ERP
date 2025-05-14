@@ -14,11 +14,15 @@ class StoreAttendanceSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'working_days' => ['required', 'integer', 'min:1', 'max:31'],
-            'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
-            'grace_period' => ['nullable', 'integer', 'min:0', 'max:60'],
-            'note' => ['nullable', 'string', 'max:255'],
+            'office_start'     => ['required', 'date_format:H:i'],
+            'start_time'       => ['required', 'date_format:H:i'],
+            'end_time'         => ['required', 'date_format:H:i', 'after:start_time'],
+            'grace_minutes'    => ['required', 'integer', 'min:0', 'max:60'],
+            'half_day_after'   => ['nullable', 'integer', 'min:0'],
+            'working_days'     => ['required', 'integer', 'min:1', 'max:31'],
+            'weekend_days'     => ['nullable', 'array'],
+            'weekend_days.*'   => ['string'],
+            'note'             => ['nullable', 'string', 'max:255'],
         ];
     }
 }

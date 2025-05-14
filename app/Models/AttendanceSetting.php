@@ -6,7 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class AttendanceSetting extends Model
 {
-    protected $fillable = ['office_start', 'grace_minutes', 'weekend_days'];
+    protected $fillable = [
+        'office_start',
+        'start_time',
+        'end_time',
+        'grace_minutes',
+        'half_day_after',
+        'working_days',
+        'weekend_days',
+        'note',
+    ];
     protected $casts = [
         'office_start' => 'datetime:H:i',
         'weekend_days' => 'array'

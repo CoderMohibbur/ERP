@@ -17,8 +17,13 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">#</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Office Start</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Start Time</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">End Time</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Grace Minutes</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Half Day After</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Working Days</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Weekend Days</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Note</th>
                     <th class="px-6 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-200">Actions</th>
                 </tr>
             </thead>
@@ -27,10 +32,15 @@
                     <tr>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $loop->iteration }}</td>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->office_start->format('H:i') }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->start_time ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->end_time ?? '-' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->grace_minutes }} min</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->half_day_after ?? '-' }} min</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->working_days }}</td>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">
-                            {{ collect($setting->weekend_days)->join(', ') }}
+                            {{ is_array($setting->weekend_days) ? collect($setting->weekend_days)->join(', ') : '-' }}
                         </td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->note ?? '-' }}</td>
                         <td class="px-6 py-4 text-right space-x-2">
                             <a href="{{ route('attendance-settings.edit', $setting->id) }}"
                                class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Edit</a>
@@ -45,7 +55,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                             No settings found.
                         </td>
                     </tr>

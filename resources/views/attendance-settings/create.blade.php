@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div class="w-full mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Add Attendance Setting</h2>
 
         <x-validation-errors class="mb-4" />
