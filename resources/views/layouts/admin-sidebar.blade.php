@@ -50,7 +50,7 @@
 
             {{-- Employee Management --}}
             <li>
-                <a href="{{ route('admin.employmanagement.index') }}"
+                <a href="{{ route('employees.index') }}"
                     class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                         class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-300 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">
@@ -68,7 +68,7 @@
 
             {{-- Attendance System --}}
             <li>
-                <a href="{{ route('admin.attendancesystem.index') }}"
+                <a href="{{ route('attendances.index') }}"
                     class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-300 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
                         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -83,7 +83,7 @@
 
             {{-- Project Management --}}
             <li>
-                <a href="{{ route('admin.projectmanagement.index') }}"
+                <a href="{{ route('projects.index') }}"
                     class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-300 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
                         fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -100,7 +100,7 @@
 
             {{-- Client Management --}}
             <li>
-                <a href="{{ route('admin.clientmanagement.index') }}"
+                <a href="{{ route('clients.index') }}"
                     class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-300 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
                         xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -116,7 +116,7 @@
 
             {{-- Billing & Invoicing --}}
             <li>
-                <a href="{{ route('admin.billinginvoicing.index') }}"
+                <a href="{{ route('invoices.index') }}"
                     class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg class="flex-shrink-0 w-6 h-6 text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white transition duration-300"
                         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

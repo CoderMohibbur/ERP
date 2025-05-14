@@ -18,6 +18,7 @@ use App\Http\Controllers\{
     PaymentController,
 };
 
+
 Route::resource('departments', DepartmentController::class);
 Route::resource('designations', DesignationController::class);
 Route::resource('employees', EmployeeController::class);
@@ -54,32 +55,4 @@ Route::middleware([
 
 
 
-// Admin Panel Routes Group
-Route::prefix('admin')->middleware(['auth'])->group(function () {
-
-    // Employee Management
-    Route::get('/employmanagement', function () {
-        return 'admin/employmanagement';
-    })->name('admin.employmanagement.index');
-
-    // Attendance System
-    Route::get('/attendancesystem', function () {
-        return 'admin/attendancesystem';
-    })->name('admin.attendancesystem.index');
-
-    // Project Management
-    Route::get('/projectmanagement', function () {
-        return 'admin/projectmanagement';
-    })->name('admin.projectmanagement.index');
-
-    // Client Management
-    Route::get('/clientmanagement', function () {
-        return 'admin/clientmanagement';
-    })->name('admin.clientmanagement.index');
-
-    // Billing & Invoicing
-    Route::get('/billinginvoicing', function () {
-        return 'admin/billinginvoicing';
-    })->name('admin.billinginvoicing.index');
-});
 
