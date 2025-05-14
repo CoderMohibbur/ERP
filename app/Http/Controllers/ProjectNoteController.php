@@ -2,63 +2,75 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Project;
+use App\Models\ProjectNote;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreProjectNoteRequest;
+use App\Http\Requests\UpdateProjectNoteRequest;
 
 class ProjectNoteController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the project notes.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $notes = ProjectNote::with(['project', 'creator'])->latest()->paginate(10);
+        return view('project-notes.index', compact('notes'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new project note.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        $projects = Project::pluck('name', 'id');
+        return view('project-notes.create', compact('projects'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created project note in storage.
      */
-    public function store(Request $request)
+    public function store(StoreProjectNoteRequest $request): RedirectResponse
     {
-        //
+        $data = $request->validated();
+        $data['created_by'] = auth()->id();
+
+        ProjectNote::create($data);
+
+        return redirect()->route('project-notes.index')
+                         ->with('success', 'Project note created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified project note.
      */
-    public function show(string $id)
+    public function edit(ProjectNote $projectNote): View
     {
-        //
+        $projects = Project::pluck('name', 'id');
+        return view('project-notes.edit', compact('projectNote', 'projects'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified project note in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateProjectNoteRequest $request, ProjectNote $projectNote): RedirectResponse
     {
-        //
+        $projectNote->update($request->validated());
+
+        return redirect()->route('project-notes.index')
+                         ->with('success', 'Project note updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified project note from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(ProjectNote $projectNote): RedirectResponse
     {
-        //
-    }
+        $projectNote->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('project-notes.index')
+                         ->with('success', 'Project note deleted successfully.');
     }
 }

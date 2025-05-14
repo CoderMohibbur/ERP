@@ -2,63 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Client;
+use App\Models\ClientContact;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use App\Http\Requests\StoreClientContactRequest;
+use App\Http\Requests\UpdateClientContactRequest;
 
 class ClientContactController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the client contacts.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        $contacts = ClientContact::with('client')->latest()->paginate(10);
+        return view('client-contacts.index', compact('contacts'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new client contact.
      */
-    public function create()
+    public function create(): View
     {
-        //
+        $clients = Client::pluck('name', 'id');
+        return view('client-contacts.create', compact('clients'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created client contact in storage.
      */
-    public function store(Request $request)
+    public function store(StoreClientContactRequest $request): RedirectResponse
     {
-        //
+        ClientContact::create($request->validated());
+
+        return redirect()->route('client-contacts.index')
+                         ->with('success', 'Client contact created successfully.');
     }
 
     /**
-     * Display the specified resource.
+     * Show the form for editing the specified client contact.
      */
-    public function show(string $id)
+    public function edit(ClientContact $clientContact): View
     {
-        //
+        $clients = Client::pluck('name', 'id');
+        return view('client-contacts.edit', compact('clientContact', 'clients'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified client contact in storage.
      */
-    public function edit(string $id)
+    public function update(UpdateClientContactRequest $request, ClientContact $clientContact): RedirectResponse
     {
-        //
+        $clientContact->update($request->validated());
+
+        return redirect()->route('client-contacts.index')
+                         ->with('success', 'Client contact updated successfully.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Remove the specified client contact from storage.
      */
-    public function update(Request $request, string $id)
+    public function destroy(ClientContact $clientContact): RedirectResponse
     {
-        //
-    }
+        $clientContact->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('client-contacts.index')
+                         ->with('success', 'Client contact deleted successfully.');
     }
 }
