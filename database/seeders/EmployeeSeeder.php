@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+
 use Illuminate\Database\Seeder;
 use App\Models\Employee;
 use App\Models\Department;
@@ -8,8 +9,10 @@ use App\Models\Designation;
 use App\Models\User;
 use Faker\Factory as Faker;
 
-class EmployeeSeeder extends Seeder {
-    public function run(): void {
+class EmployeeSeeder extends Seeder
+{
+    public function run(): void
+    {
         $faker = Faker::create();
         $user = User::first();
         $dept = Department::first();
@@ -22,6 +25,7 @@ class EmployeeSeeder extends Seeder {
                 'phone' => $faker->phoneNumber,
                 'department_id' => $dept->id,
                 'designation_id' => $desig->id,
+                'join_date' => $faker->date(), // ✅ সমস্যা সমাধান
                 'created_by' => $user->id,
             ]);
         }
