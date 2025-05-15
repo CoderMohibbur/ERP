@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Task extends Model
 {
     use SoftDeletes;
@@ -21,4 +22,8 @@ class Task extends Model
     {
         return $this->belongsToMany(Employee::class, 'task_employee');
     }
+
+    protected $casts = [
+        'due_date' => 'date',
+    ];
 }

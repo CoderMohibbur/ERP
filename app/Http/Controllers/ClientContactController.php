@@ -34,7 +34,8 @@ class ClientContactController extends Controller
      */
     public function store(StoreClientContactRequest $request): RedirectResponse
     {
-        ClientContact::create($request->validated());
+        $data = $request->validated();
+        ClientContact::create($data);
 
         return redirect()->route('client-contacts.index')
                          ->with('success', 'Client contact created successfully.');
@@ -54,7 +55,8 @@ class ClientContactController extends Controller
      */
     public function update(UpdateClientContactRequest $request, ClientContact $clientContact): RedirectResponse
     {
-        $clientContact->update($request->validated());
+        $data = $request->validated();
+        $clientContact->update($data);
 
         return redirect()->route('client-contacts.index')
                          ->with('success', 'Client contact updated successfully.');

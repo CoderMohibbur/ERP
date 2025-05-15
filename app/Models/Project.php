@@ -39,4 +39,8 @@ class Project extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    protected $casts = [
+        'deadline' => 'date',
+    ];
 }

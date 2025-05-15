@@ -27,7 +27,8 @@ class InvoiceController extends Controller
     public function create(): View
     {
         $clients = Client::pluck('name', 'id');
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
+
         return view('invoices.create', compact('clients', 'projects'));
     }
 
@@ -51,7 +52,8 @@ class InvoiceController extends Controller
     public function edit(Invoice $invoice): View
     {
         $clients = Client::pluck('name', 'id');
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
+
         return view('invoices.edit', compact('invoice', 'clients', 'projects'));
     }
 

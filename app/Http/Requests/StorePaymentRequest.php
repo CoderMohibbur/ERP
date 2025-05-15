@@ -17,7 +17,7 @@ class StorePaymentRequest extends FormRequest
             'invoice_id' => ['required', 'exists:invoices,id'],
             'payment_method_id' => ['required', 'exists:payment_methods,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'payment_date' => ['required', 'date'],
+            'paid_at' => ['required', 'date'], // ✅ DB অনুযায়ী column নাম
             'note' => ['nullable', 'string', 'max:500'],
         ];
     }

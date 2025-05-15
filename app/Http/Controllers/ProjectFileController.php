@@ -27,7 +27,8 @@ class ProjectFileController extends Controller
      */
     public function create(): View
     {
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
+
         return view('project-files.create', compact('projects'));
     }
 
@@ -53,7 +54,8 @@ class ProjectFileController extends Controller
      */
     public function edit(ProjectFile $projectFile): View
     {
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
+
         return view('project-files.edit', compact('projectFile', 'projects'));
     }
 

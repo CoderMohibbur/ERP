@@ -54,13 +54,21 @@ class ProjectController extends Controller
     /**
      * Update the specified project in storage.
      */
-    public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
-    {
-        $project->update($request->validated());
+public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
+{
+    $data = $request->validated();
 
-        return redirect()->route('projects.index')
-                         ->with('success', 'Project updated successfully.');
+    // যদি deadline ফিল্ড string আকারে আসে, তবে সেটাকে date টাইপে কনভার্ট করা যেতে পারে (যদি দরকার হয়)
+    if (isset($data['deadline'])) {
+        $data['deadline'] = \Carbon\Carbon::parse($data['deadline']);
     }
+
+    $project->update($data);
+
+    return redirect()->route('projects.index')
+                     ->with('success', 'Project updated successfully.');
+}
+
 
     /**
      * Remove the specified project from storage.

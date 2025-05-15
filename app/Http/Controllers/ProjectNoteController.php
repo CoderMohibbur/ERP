@@ -25,7 +25,7 @@ class ProjectNoteController extends Controller
      */
     public function create(): View
     {
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
         return view('project-notes.create', compact('projects'));
     }
 
@@ -48,7 +48,7 @@ class ProjectNoteController extends Controller
      */
     public function edit(ProjectNote $projectNote): View
     {
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
         return view('project-notes.edit', compact('projectNote', 'projects'));
     }
 

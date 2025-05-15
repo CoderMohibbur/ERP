@@ -26,7 +26,7 @@ class PaymentController extends Controller
      */
     public function create(): View
     {
-        $invoices = Invoice::pluck('invoice_number', 'id');
+        $invoices = Invoice::pluck('id', 'id');
         $methods = PaymentMethod::pluck('name', 'id');
         return view('payments.create', compact('invoices', 'methods'));
     }
@@ -47,7 +47,7 @@ class PaymentController extends Controller
      */
     public function edit(Payment $payment): View
     {
-        $invoices = Invoice::pluck('invoice_number', 'id');
+        $invoices = Invoice::pluck('id', 'id');
         $methods = PaymentMethod::pluck('name', 'id');
         return view('payments.edit', compact('payment', 'invoices', 'methods'));
     }

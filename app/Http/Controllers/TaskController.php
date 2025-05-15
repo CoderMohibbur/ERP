@@ -17,7 +17,8 @@ class TaskController extends Controller
      */
     public function index(): View
     {
-        $tasks = Task::with(['project', 'assignee'])->latest()->paginate(10);
+        $tasks = Task::with(['project', 'assignedEmployee'])->latest()->paginate(10);
+
         return view('tasks.index', compact('tasks'));
     }
 
@@ -26,7 +27,8 @@ class TaskController extends Controller
      */
     public function create(): View
     {
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
+
         $employees = Employee::pluck('name', 'id');
         return view('tasks.create', compact('projects', 'employees'));
     }
@@ -47,7 +49,7 @@ class TaskController extends Controller
      */
     public function edit(Task $task): View
     {
-        $projects = Project::pluck('name', 'id');
+        $projects = Project::pluck('title', 'id');
         $employees = Employee::pluck('name', 'id');
         return view('tasks.edit', compact('task', 'projects', 'employees'));
     }

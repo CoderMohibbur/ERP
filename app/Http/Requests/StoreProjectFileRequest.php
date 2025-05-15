@@ -15,8 +15,8 @@ class StoreProjectFileRequest extends FormRequest
     {
         return [
             'project_id' => ['required', 'exists:projects,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'file' => ['required', 'file', 'mimes:pdf,doc,docx,xlsx,csv,zip,jpg,png', 'max:20480'], // Max 20MB
+            'file_type'  => ['nullable', 'string', 'max:255'],
+            'file'       => ['required', 'file', 'mimes:pdf,doc,docx,xlsx,csv,zip,jpg,jpeg,png', 'max:20480'], // 20MB
         ];
     }
 }

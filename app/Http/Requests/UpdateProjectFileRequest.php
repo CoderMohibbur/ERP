@@ -15,8 +15,8 @@ class UpdateProjectFileRequest extends FormRequest
     {
         return [
             'project_id' => ['required', 'exists:projects,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,xlsx,csv,zip,jpg,png', 'max:20480'],
+            'file_type'  => ['nullable', 'string', 'max:255'],
+            'file'       => ['nullable', 'file', 'mimes:pdf,doc,docx,xlsx,csv,zip,jpg,jpeg,png', 'max:20480'],
         ];
     }
 }

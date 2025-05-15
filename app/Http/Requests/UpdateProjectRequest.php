@@ -14,12 +14,11 @@ class UpdateProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'title' => ['required', 'string', 'max:255'],
             'client_id' => ['required', 'exists:clients,id'],
-            'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string'],
-            'status' => ['required', 'in:pending,active,completed,cancelled'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'deadline' => ['required', 'date'],
+            'status' => ['required', 'in:pending,in progress,completed'],
         ];
     }
 }
