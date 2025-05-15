@@ -89,12 +89,12 @@
                 </button>
                 <ul id="attendance-dropdown" class="space-y-2 hidden">
                     <li>
-                        <a href="departments"
+                        <a href="attendances"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700 ">Attendance
                             Logs</a>
                     </li>
                     <li>
-                        <a href="designations"
+                        <a href="attendance-settings"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Attendance
                             Config</a>
                     </li>
