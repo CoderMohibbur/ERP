@@ -51,7 +51,8 @@ class Employee extends Model
 
     // Accessor for formatted join date 
     protected $casts = [
-    'join_date' => 'date',
+    'join_date' => 'datetime'
 ];
+
 
 }
