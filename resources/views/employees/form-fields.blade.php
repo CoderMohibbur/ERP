@@ -22,12 +22,13 @@
                 </div>
 
                 <div>
-                    <label for="join_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Join
-                        Date</label>
-                    <input type="date" name="join_date" id="join_date"
-                        value="{{ old('join_date', isset($employee) ? $employee->join_date->format('Y-m-d') : '') }}"
+                    <label for="join_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Date & Time</label>
+                    <input type="datetime-local" name="join_date" id="join_date"
+                        value="{{ old('join_date', isset($employee) ? $employee->join_date->format('Y-m-d\TH:i') : '') }}"
                         required
                         class="w-full mt-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+
                 </div>
 
                 <div>

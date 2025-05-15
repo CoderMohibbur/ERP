@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('phone')->nullable();
-            $table->date('join_date');
+            $table->dateTime('join_date');
             $table->string('photo')->nullable();
             $table->unsignedBigInteger('department_id');
             $table->unsignedBigInteger('designation_id');
