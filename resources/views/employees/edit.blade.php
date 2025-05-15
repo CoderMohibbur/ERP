@@ -1,11 +1,12 @@
 <x-app-layout>
     <div class="w-full mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Add Employee</h2>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Update Employee</h2>
 
         <x-validation-errors class="mb-4" />
 
-        <form method="POST" action="{{ route('employees.store') }}" enctype="multipart/form-data">
-            @csrf
+        <form method="POST" action="{{ route('employees.update', $employee->id) }}" enctype="multipart/form-data">
+              @csrf
+            @method('PUT')
 
             @include('employees.form-fields')
 
