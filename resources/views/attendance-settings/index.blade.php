@@ -31,9 +31,9 @@
                 @forelse($settings as $setting)
                     <tr>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $loop->iteration }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->office_start->format('H:i') }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->start_time ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->end_time ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->office_start->format('H:i A') }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->start_time->format('H:i A') ?? '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->end_time->format('H:i A')  ?? '-' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->grace_minutes }} min</td>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->half_day_after ?? '-' }} min</td>
                         <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $setting->working_days }}</td>

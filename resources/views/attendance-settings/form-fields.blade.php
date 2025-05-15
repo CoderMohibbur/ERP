@@ -9,14 +9,14 @@
     <div>
         <label for="start_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Time</label>
         <input type="time" name="start_time" id="start_time"
-               value="{{ old('start_time', $setting->start_time ?? '') }}" required
+                value="{{ old('start_time', isset($setting) ? $setting->start_time->format('H:i') : '') }}" required
                class="w-full mt-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
     </div>
 
     <div>
         <label for="end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Time</label>
         <input type="time" name="end_time" id="end_time"
-               value="{{ old('end_time', $setting->end_time ?? '') }}" required
+            value="{{ old('end_time', isset($setting) ? $setting->end_time->format('H:i') : '') }}" required
                class="w-full mt-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
     </div>
 

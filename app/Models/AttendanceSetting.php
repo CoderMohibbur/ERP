@@ -18,6 +18,8 @@ class AttendanceSetting extends Model
     ];
     protected $casts = [
         'office_start' => 'datetime:H:i',
+        'start_time' => 'datetime:H:i',
+        'end_time' => 'datetime:H:i',
         'weekend_days' => 'array'
     ];
 }
