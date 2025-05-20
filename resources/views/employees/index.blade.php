@@ -12,13 +12,20 @@
     </div>
 
 
-    {{-- Colaps shorting --}}
+    <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
+        {{-- 🔍 Search Bar --}}
+        {{-- 🔍 Filter Toggle Button --}}
+        <button type="button" onclick="toggleFilter()"
+            class="px-8 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+            Filter
+        </button>
+        {{-- Search Bar --}}
+        <input type="text" placeholder="🔍 Search employees..."
+            class="w-full sm:w-1/3 px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            oninput="filterTable(this.value)">
+    </div>
 
-    {{-- 🔍 Filter Toggle Button --}}
-    <button type="button" onclick="toggleFilter()"
-        class="mb-4 px-8 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-        Filter
-    </button>
+
 
     {{-- 🔽 Collapsible Filter Panel --}}
     <form method="GET" action="{{ route('employees.index') }}" id="filterPanel"
@@ -99,7 +106,7 @@
 
 
     <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700" id="employee-table">
             <thead class="bg-gray-100 dark:bg-gray-700">
                 <tr>
                     @foreach (['#', 'Name', 'Email', 'Department', 'Designation', 'Join Date', 'Photo', 'Actions'] as $col)
@@ -159,4 +166,14 @@
             {{ $employees->links() }}
         </div>
     </div>
+    {{-- JS Filter (simple client-side) --}}
+    <script>
+        function filterTable(query) {
+            const rows = document.querySelectorAll("#employee-table tbody tr");
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? "" : "none";
+            });
+        }
+    </script>
 </x-app-layout>
