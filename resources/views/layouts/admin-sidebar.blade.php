@@ -48,15 +48,15 @@
                 </button>
                 <ul id="user-dropdown" class="space-y-2 hidden">
                     <li>
-                        <a href="departments"
+                        <a href="/departments"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700 ">Departments</a>
                     </li>
                     <li>
-                        <a href="designations"
+                        <a href="/designations"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Designations</a>
                     </li>
                     <li>
-                        <a href="employees"
+                        <a href="/employees"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Employees</a>
                     </li>
 
@@ -89,12 +89,12 @@
                 </button>
                 <ul id="attendance-dropdown" class="space-y-2 hidden">
                     <li>
-                        <a href="attendances"
+                        <a href="/attendances"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700 ">Attendance
                             Logs</a>
                     </li>
                     <li>
-                        <a href="attendance-settings"
+                        <a href="/attendance-settings"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Attendance
                             Config</a>
                     </li>
@@ -127,19 +127,19 @@
                 </button>
                 <ul id="project-dropdown" class="space-y-2 hidden">
                     <li>
-                        <a href="projects"
+                        <a href="/projects"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700 ">Projects</a>
                     </li>
                     <li>
-                        <a href="tasks"
+                        <a href="/tasks"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Tasks</a>
                     </li>
                     <li>
-                        <a href="project-files"
+                        <a href="/project-files"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Files</a>
                     </li>
                     <li>
-                        <a href="project-notes"
+                        <a href="/project-notes"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Notes</a>
                     </li>
                 </ul>
@@ -172,16 +172,16 @@
                 </button>
                 <ul id="client-dropdown" class="space-y-2 hidden">
                     <li>
-                        <a href="clients"
+                        <a href="/clients"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700 ">Clients</a>
                     </li>
                     <li>
-                        <a href="client-contacts"
+                        <a href="/client-contacts"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Contacts</a>
                     </li>
 
                     <li>
-                        <a href="client-notes"
+                        <a href="/client-notes"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Notes</a>
                     </li>
                 </ul>
@@ -213,11 +213,11 @@
                 </button>
                 <ul id="invoice-dropdown" class="space-y-2 hidden">
                     <li>
-                        <a href="invoices"
+                        <a href="/invoices"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700 ">Invoices</a>
                     </li>
                     <li>
-                        <a href="payments"
+                        <a href="/payments"
                             class="menu-text text-base text-gray-900 rounded-lg flex items-center p-2 group hover:bg-gray-100 transition duration-75 pl-11 dark:text-gray-200 dark:hover:bg-gray-700">Payments</a>
                     </li>
 
