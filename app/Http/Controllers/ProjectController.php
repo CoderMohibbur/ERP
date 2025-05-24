@@ -25,9 +25,12 @@ class ProjectController extends Controller
      */
     public function create(): View
     {
-        $clients = Client::pluck('name', 'id');
-        return view('projects.create', compact('clients'));
+        $clients = Client::orderBy('id', 'desc')->pluck('name', 'id'); // DESC order
+        $newClientId = session('new_client_id'); // সেশন থেকে client id নিচ্ছি
+
+        return view('projects.create', compact('clients', 'newClientId'));
     }
+
 
     /**
      * Store a newly created project in storage.
@@ -36,11 +39,19 @@ class ProjectController extends Controller
     {
         $data = $request->validated();
         $data['created_by'] = auth()->id();
-        Project::create($data);
+        $project = Project::create($data);
+
+        if ($request->has('from_task_form')) {
+            return redirect()->route('tasks.create')
+        ->with('new_project_id', $project->id)
+        ->withInput() // ✅ এটা যোগ করুন
+        ->with('success', 'Project created successfully.');
+        }
 
         return redirect()->route('projects.index')
-                         ->with('success', 'Project created successfully.');
+            ->with('success', 'Project created successfully.');
     }
+
 
     /**
      * Show the form for editing the specified project.
@@ -54,20 +65,20 @@ class ProjectController extends Controller
     /**
      * Update the specified project in storage.
      */
-public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
-{
-    $data = $request->validated();
+    public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
+    {
+        $data = $request->validated();
 
-    // যদি deadline ফিল্ড string আকারে আসে, তবে সেটাকে date টাইপে কনভার্ট করা যেতে পারে (যদি দরকার হয়)
-    if (isset($data['deadline'])) {
-        $data['deadline'] = \Carbon\Carbon::parse($data['deadline']);
+        // যদি deadline ফিল্ড string আকারে আসে, তবে সেটাকে date টাইপে কনভার্ট করা যেতে পারে (যদি দরকার হয়)
+        if (isset($data['deadline'])) {
+            $data['deadline'] = \Carbon\Carbon::parse($data['deadline']);
+        }
+
+        $project->update($data);
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project updated successfully.');
     }
-
-    $project->update($data);
-
-    return redirect()->route('projects.index')
-                     ->with('success', 'Project updated successfully.');
-}
 
 
     /**
@@ -78,6 +89,6 @@ public function update(UpdateProjectRequest $request, Project $project): Redirec
         $project->delete();
 
         return redirect()->route('projects.index')
-                         ->with('success', 'Project deleted successfully.');
+            ->with('success', 'Project deleted successfully.');
     }
 }

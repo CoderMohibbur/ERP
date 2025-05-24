@@ -13,15 +13,7 @@ use App\Http\Requests\UpdateEmployeeRequest;
 
 class EmployeeController extends Controller
 {
-    /**
-     * Display a listing of the employees.
-     */
-    // public function index(): View
-    // {
-    //     $employees = Employee::with(['department', 'designation'])->latest()->paginate(10);
-    //     return view('employees.index', compact('employees'));
-    // }
-
+    
 
     public function index(Request $request): View
     {
@@ -65,8 +57,8 @@ class EmployeeController extends Controller
      */
     public function create(): View
     {
-        $departments = Department::pluck('name', 'id');
-        $designations = Designation::pluck('name', 'id');
+        $departments = Department::orderBy('id', 'desc')->pluck('name', 'id');
+        $designations = Designation::orderBy('id', 'desc')->pluck('name', 'id');
         return view('employees.create', compact('departments', 'designations'));
     }
 
@@ -81,10 +73,19 @@ class EmployeeController extends Controller
             $data['photo'] = $request->file('photo')->store('uploads/employees', 'public');
         }
 
-        Employee::create($data);
+        $employee = Employee::create($data);
+
+        if ($request->has('from_task_form')) {
+            return redirect()->route('tasks.create')
+                ->with('new_employee_id', $employee->id)
+                ->withInput() // ✅ এটা যোগ করুন
+                ->with('success', 'Employee created successfully.');
+        }
 
         return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
     }
+
+
 
 
 
@@ -93,8 +94,8 @@ class EmployeeController extends Controller
      */
     public function edit(Employee $employee): View
     {
-        $departments = Department::pluck('name', 'id');
-        $designations = Designation::pluck('name', 'id');
+        $departments = Department::orderBy('id', 'desc')->pluck('name', 'id');
+        $designations = Designation::orderBy('id', 'desc')->pluck('name', 'id');
         return view('employees.edit', compact('employee', 'departments', 'designations'));
     }
 
