@@ -96,7 +96,7 @@
 <body class="font-sans antialiased">
     {{-- <x-banner /> --}}
 
-    <div class="min-h-screen bg-gray-100  dark:bg-gray-900">
+    <div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6 rounded-lg shadow">
         @include('layouts.admin-nav')
         <div class="flex pt-16 overflow-hidden bg-gray-50 dark:bg-gray-900">
             @include('layouts.admin-sidebar')
@@ -230,20 +230,20 @@
         });
 
         // ✅ Close Sidebar when clicking outside (Smooth Animation)
-        document.addEventListener("click", function(event) {
-            if (!profileDropdown.contains(event.target) && event.target !== profileButton) {
-                profileDropdown.classList.add("hidden");
-                isDropdownOpen = false;
+        // document.addEventListener("click", function(event) {
+        //     if (!profileDropdown.contains(event.target) && event.target !== profileButton) {
+        //         profileDropdown.classList.add("hidden");
+        //         isDropdownOpen = false;
 
-                // ✅ Sidebar Smoothly Close When Clicking Outside
-                if (isSidebarOpen && !sidebar.contains(event.target) && event.target !== toggleButton) {
-                    sidebar.style.transition = "transform 0.3s ease-in-out"; // Smooth animation
-                    sidebar.classList.remove("open");
-                    isSidebarOpen = false;
-                    updateSidebar();
-                }
-            }
-        });
+        //         // ✅ Sidebar Smoothly Close When Clicking Outside
+        //         if (isSidebarOpen && !sidebar.contains(event.target) && event.target !== toggleButton) {
+        //             sidebar.style.transition = "transform 0.3s ease-in-out"; // Smooth animation
+        //             sidebar.classList.remove("open");
+        //             isSidebarOpen = false;
+        //             updateSidebar();
+        //         }
+        //     }
+        // });
 
 
 

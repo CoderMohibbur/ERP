@@ -6,24 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('invoice_id');
-            $table->string('description');
-            $table->decimal('amount', 12, 2);
+            
+
+            $table->string('item_code')->nullable();
+            $table->string('item_name');
+            $table->text('description')->nullable();
+            $table->integer('quantity')->default(1);
+            $table->decimal('unit_price', 10, 2);
+            $table->decimal('tax_percent', 5, 2)->nullable();
+            $table->decimal('total', 12, 2);
+
             $table->softDeletes();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('invoice_items');

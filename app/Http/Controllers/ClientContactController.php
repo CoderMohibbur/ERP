@@ -12,7 +12,7 @@ use App\Http\Requests\UpdateClientContactRequest;
 class ClientContactController extends Controller
 {
     /**
-     * Display a listing of the client contacts.
+     * Show all client contacts
      */
     public function index(): View
     {
@@ -21,7 +21,7 @@ class ClientContactController extends Controller
     }
 
     /**
-     * Show the form for creating a new client contact.
+     * Show the form to create a client contact
      */
     public function create(): View
     {
@@ -30,19 +30,28 @@ class ClientContactController extends Controller
     }
 
     /**
-     * Store a newly created client contact in storage.
+     * Store a single client contact based on selected type & value
      */
     public function store(StoreClientContactRequest $request): RedirectResponse
     {
-        $data = $request->validated();
-        ClientContact::create($data);
+        $clientId = $request->input('client_id');
+        $type = $request->input('type');
+        $value = $request->input('value');
+
+        if ($type && $value) {
+            ClientContact::create([
+                'client_id' => $clientId,
+                'type' => $type,
+                'value' => $value,
+            ]);
+        }
 
         return redirect()->route('client-contacts.index')
-                         ->with('success', 'Client contact created successfully.');
+            ->with('success', 'Client contact created successfully.');
     }
 
     /**
-     * Show the form for editing the specified client contact.
+     * Show the form to edit a client contact
      */
     public function edit(ClientContact $clientContact): View
     {
@@ -51,25 +60,24 @@ class ClientContactController extends Controller
     }
 
     /**
-     * Update the specified client contact in storage.
+     * Update a client contact
      */
     public function update(UpdateClientContactRequest $request, ClientContact $clientContact): RedirectResponse
     {
-        $data = $request->validated();
-        $clientContact->update($data);
+        $clientContact->update($request->validated());
 
         return redirect()->route('client-contacts.index')
-                         ->with('success', 'Client contact updated successfully.');
+            ->with('success', 'Client contact updated successfully.');
     }
 
     /**
-     * Remove the specified client contact from storage.
+     * Delete a client contact
      */
     public function destroy(ClientContact $clientContact): RedirectResponse
     {
         $clientContact->delete();
 
         return redirect()->route('client-contacts.index')
-                         ->with('success', 'Client contact deleted successfully.');
+            ->with('success', 'Client contact deleted successfully.');
     }
 }

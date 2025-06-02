@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('assigned_to')->nullable();
             $table->integer('progress')->default(0);
             $table->date('due_date')->nullable();
+            $table->text('note')->nullable(); // ✅ newly added field
             $table->softDeletes();
             $table->timestamps();
         });

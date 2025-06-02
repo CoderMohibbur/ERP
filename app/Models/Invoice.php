@@ -2,33 +2,57 @@
 
 namespace App\Models;
 
-use App\Models\User;
-
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invoice extends Model
 {
-    use SoftDeletes;
-    protected $fillable = ['client_id', 'project_id', 'total_amount', 'due_amount', 'status', 'created_by'];
+    protected $fillable = [
+        'invoice_number',
+        'client_id',
+        'project_id',
+        'status',
+        'currency',
+        'issue_date',
+        'due_date',
+        'sub_total',
+        'discount_type',
+        'discount_value',
+        'tax_rate',
+        'total_amount',
+        'paid_amount',
+        'due_amount',
+        'notes',
+        'created_by',
+    ];
+
+    // 🔁 Relationships
     public function client()
     {
         return $this->belongsTo(Client::class);
     }
+
     public function project()
     {
         return $this->belongsTo(Project::class);
     }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
     public function items()
     {
         return $this->hasMany(InvoiceItem::class);
     }
+
+
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
+    protected $casts = [
+        'issue_date' => 'datetime',
+        'due_date' => 'datetime',
+    ];
 }

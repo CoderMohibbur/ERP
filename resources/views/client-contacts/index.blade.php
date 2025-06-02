@@ -1,62 +1,54 @@
 <x-app-layout>
-    <div>
-        <x-success-message />
-    </div>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Client Contacts</h2>
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Client Contacts</h1>
+    @if(session('success'))
+        <div class="mb-4 p-4 bg-green-100 text-green-700 border border-green-300 rounded-md">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="mb-4 text-right">
         <a href="{{ route('client-contacts.create') }}"
-           class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition">
-            + Add Contact
-        </a>
+           class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">➕ Add Contact</a>
     </div>
 
-    <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-100 dark:bg-gray-700">
+    <div class="overflow-x-auto">
+        <table class="w-full table-auto border border-gray-300 dark:border-gray-700">
+            <thead class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white">
                 <tr>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">#</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Client</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Name</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Email</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Phone</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Designation</th>
-                    <th class="px-6 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-200">Actions</th>
+                    <th class="px-4 py-2 text-left">Client</th>
+                    <th class="px-4 py-2 text-left">Type</th>
+                    <th class="px-4 py-2 text-left">Value</th>
+                    <th class="px-4 py-2 text-right">Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody class="text-sm text-gray-800 dark:text-white">
                 @forelse($contacts as $contact)
-                    <tr>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $loop->iteration }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $contact->client->name ?? '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $contact->name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $contact->email }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $contact->phone }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-100">{{ $contact->designation }}</td>
-                        <td class="px-6 py-4 text-right space-x-2">
+                    <tr class="border-t border-gray-200 dark:border-gray-700">
+                        <td class="px-4 py-2">{{ $contact->client->name ?? 'N/A' }}</td>
+                        <td class="px-4 py-2 capitalize">{{ $contact->type }}</td>
+                        <td class="px-4 py-2">{{ $contact->value }}</td>
+                        <td class="px-4 py-2 text-right space-x-2">
                             <a href="{{ route('client-contacts.edit', $contact->id) }}"
-                               class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Edit</a>
-                            <form action="{{ route('client-contacts.destroy', $contact->id) }}" method="POST" class="inline">
-                                @csrf @method('DELETE')
-                                <button onclick="return confirm('Are you sure?')"
-                                        class="text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium">
-                                    Delete
-                                </button>
+                               class="text-blue-600 hover:underline">Edit</a>
+                            <form action="{{ route('client-contacts.destroy', $contact->id) }}" method="POST"
+                                  class="inline-block" onsubmit="return confirm('Are you sure?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                            No contacts found.
-                        </td>
+                        <td colspan="4" class="px-4 py-4 text-center text-gray-500">No client contacts found.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
 
-        <div class="mt-4 px-4">
-            {{ $contacts->links() }}
-        </div>
+    <div class="mt-4">
+        {{ $contacts->links() }}
     </div>
 </x-app-layout>

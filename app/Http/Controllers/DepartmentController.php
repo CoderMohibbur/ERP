@@ -35,9 +35,14 @@ class DepartmentController extends Controller
     {
         Department::create($request->validated());
 
-        return redirect()->route('departments.index')
-                         ->with('success', 'Department created successfully.');
+        // 🔁 Determine where to redirect based on request type or referrer
+        if ($request->has('from_employee_form')) {
+            return redirect()->back()->with('success', '✅ New Department added successfully.');
+        }
+
+        return redirect()->route('departments.index')->with('success', '✅ Department created successfully.');
     }
+
 
     /**
      * Show the form for editing the specified department.
@@ -55,7 +60,7 @@ class DepartmentController extends Controller
         $department->update($request->validated());
 
         return redirect()->route('departments.index')
-                         ->with('success', 'Department updated successfully.');
+            ->with('success', 'Department updated successfully.');
     }
 
     /**
@@ -66,6 +71,6 @@ class DepartmentController extends Controller
         $department->delete();
 
         return redirect()->route('departments.index')
-                         ->with('success', 'Department deleted successfully.');
+            ->with('success', 'Department deleted successfully.');
     }
 }

@@ -35,7 +35,12 @@ class ClientController extends Controller
     {
         $data = $request->validated();
         $data['created_by'] = auth()->id();
-        Client::create($data);
+        $client = Client::create($data);
+
+        if ($request->has('create_project') && $request->input('create_project')) {
+            return redirect()->route('projects.create')
+                             ->with('success', 'Client created successfully.');
+        }
 
         return redirect()->route('clients.index')
                          ->with('success', 'Client created successfully.');

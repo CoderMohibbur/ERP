@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\Client;
 use App\Models\Project;
 use App\Models\Employee;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use App\Models\Department;
+use App\Models\Designation;
+use Illuminate\Http\RedirectResponse;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 
@@ -18,7 +21,6 @@ class TaskController extends Controller
     public function index(): View
     {
         $tasks = Task::with(['project', 'assignedEmployee'])->latest()->paginate(10);
-
         return view('tasks.index', compact('tasks'));
     }
 
@@ -27,21 +29,37 @@ class TaskController extends Controller
      */
     public function create(): View
     {
-        $projects = Project::pluck('title', 'id');
+        $projects = Project::orderBy('id', 'desc')->pluck('title', 'id');
+        $employees = Employee::orderBy('id', 'desc')->pluck('name', 'id');
+        $clients = Client::orderBy('id', 'desc')->pluck('name', 'id');
 
-        $employees = Employee::pluck('name', 'id');
-        return view('tasks.create', compact('projects', 'employees'));
+        $departments = Department::orderBy('id', 'desc')->pluck('name', 'id'); // ✅ add this
+        $designations = Designation::orderBy('id', 'desc')->pluck('name', 'id'); // ✅ add this
+
+        $newProjectId = session('new_project_id');
+        $newEmployeeId = session('new_employee_id');
+
+        return view('tasks.create', compact(
+            'projects',
+            'employees',
+            'clients',
+            'departments', // ✅
+            'designations', // ✅
+            'newProjectId',
+            'newEmployeeId'
+        ));
     }
+
 
     /**
      * Store a newly created task in storage.
      */
     public function store(StoreTaskRequest $request): RedirectResponse
     {
-        Task::create($request->validated());
 
+        Task::create($request->validated()); // note field will be validated and stored here
         return redirect()->route('tasks.index')
-                         ->with('success', 'Task created successfully.');
+            ->with('success', 'Task created successfully.');
     }
 
     /**
@@ -59,10 +77,9 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, Task $task): RedirectResponse
     {
-        $task->update($request->validated());
-
+        $task->update($request->validated()); // note updated here too
         return redirect()->route('tasks.index')
-                         ->with('success', 'Task updated successfully.');
+            ->with('success', 'Task updated successfully.');
     }
 
     /**
@@ -71,8 +88,7 @@ class TaskController extends Controller
     public function destroy(Task $task): RedirectResponse
     {
         $task->delete();
-
         return redirect()->route('tasks.index')
-                         ->with('success', 'Task deleted successfully.');
+            ->with('success', 'Task deleted successfully.');
     }
 }

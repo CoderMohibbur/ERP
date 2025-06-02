@@ -31,13 +31,24 @@ class DesignationController extends Controller
     /**
      * Store a newly created designation in storage.
      */
-    public function store(StoreDesignationRequest $request): RedirectResponse
-    {
-        Designation::create($request->validated());
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255|unique:designations,name',
+    ]);
 
-        return redirect()->route('designations.index')
-                         ->with('success', 'Designation created successfully.');
+    $designation = Designation::create([
+        'name' => $request->name,
+    ]);
+
+    if ($request->has('from_employee_form')) {
+        session()->flash('new_designation_id', $designation->id);
+        return redirect()->back()->with('success', '✅ New Designation added successfully.');
     }
+
+    return redirect()->route('designations.index')->with('success', 'Designation created successfully.');
+}
+
 
     /**
      * Show the form for editing the specified designation.

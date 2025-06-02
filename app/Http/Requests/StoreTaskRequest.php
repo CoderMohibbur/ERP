@@ -20,6 +20,8 @@ class StoreTaskRequest extends FormRequest
             'assigned_to'  => ['nullable', 'exists:employees,id'],
             'progress'     => ['required', 'integer', 'min:0', 'max:100'],
             'due_date'     => ['nullable', 'date'],
+            'note'         => ['nullable', 'string'],
+
         ];
     }
 }

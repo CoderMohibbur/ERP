@@ -15,8 +15,10 @@ use App\Http\Controllers\{
     ProjectFileController,
     ProjectNoteController,
     InvoiceController,
+    InvoiceItemController,
     PaymentController,
 };
+use App\Models\InvoiceItem;
 
 Route::get('/', function () {
     return view('welcome');
@@ -50,5 +52,11 @@ Route::middleware([
     Route::resource('project-files', ProjectFileController::class);
     Route::resource('project-notes', ProjectNoteController::class);
     Route::resource('invoices', InvoiceController::class);
+    Route::resource('invoice-items', InvoiceItemController::class);
     Route::resource('payments', PaymentController::class);
+
+
+
+    Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
+    Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
 });
