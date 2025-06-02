@@ -1,67 +1,77 @@
 <?php
 
-namespace App\Models;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
-use Laravel\Jetstream\HasProfilePhoto;
-use Laravel\Sanctum\HasApiTokens;
-
-class User extends Authenticatable
+return new class extends Migration
 {
-    use HasApiTokens;
-
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory;
-    use HasProfilePhoto;
-    use Notifiable;
-    use TwoFactorAuthenticatable;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-        'two_factor_recovery_codes',
-        'two_factor_secret',
-    ];
-
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<int, string>
-     */
-    protected $appends = [
-        'profile_photo_url',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function up(): void
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+
+            // ✅ Jetstream default fields
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->unsignedBigInteger('current_team_id')->nullable(); // Jetstream Team support
+            $table->string('profile_photo_path', 2048)->nullable();
+
+            // ✅ Recommended Enterprise Fields
+            $table->foreignId('role_id')->nullable()->constrained()->nullOnDelete(); // Optional RBAC
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('timezone', 100)->nullable();
+            $table->string('language', 20)->default('en');
+            $table->string('ip_address', 45)->nullable();
+            $table->string('login_device')->nullable();
+            $table->text('user_agent')->nullable();
+
+            // ✅ Meta Fields
+            $table->boolean('profile_completed')->default(false);
+            $table->boolean('force_password_reset')->default(false);
+            $table->timestamp('last_password_change_at')->nullable();
+            $table->integer('api_limit')->nullable();
+            $table->string('session_token')->nullable();
+
+            // ✅ Audit Tracking
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+
+            // ✅ Soft delete + timestamps
+            $table->softDeletes(); // 🔁 soft delete support enabled
+            $table->timestamps();
+
+            // ✅ Indexing for performance
+            $table->index(['email', 'is_active']);
+            $table->index('last_login_at');
+        });
+
+        // ✅ Password Reset Tokens
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ✅ Session Tracking
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
     }
-}
+
+    public function down(): void
+    {
+        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
+    }
+};
