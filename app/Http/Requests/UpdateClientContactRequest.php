@@ -15,10 +15,8 @@ class UpdateClientContactRequest extends FormRequest
     {
         return [
             'client_id' => ['required', 'exists:clients,id'],
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['nullable', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'designation' => ['nullable', 'string', 'max:100'],
+            'type' => ['required', 'in:name,email,phone,designation'],
+            'value' => ['required', 'string', 'max:255'],
         ];
     }
 }

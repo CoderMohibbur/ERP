@@ -1,6 +1,19 @@
 <x-app-layout>
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Add Client</h2>
 
+
+        @if ($errors->any())
+        <div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-700 rounded-md">
+            <strong>🚫 Validation Error:</strong>
+            <ul class="mt-2 list-disc list-inside text-sm text-red-600">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+
     <form action="{{ route('clients.store') }}" method="POST">
         @csrf
 

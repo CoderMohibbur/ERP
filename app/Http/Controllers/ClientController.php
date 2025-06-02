@@ -37,11 +37,14 @@ class ClientController extends Controller
         $data['created_by'] = auth()->id();
         $client = Client::create($data);
 
-        return redirect()->route('projects.create')
-            ->with('new_client_id', $client->id)
-            ->with('success', 'Client created successfully.');
-    }
+        if ($request->has('create_project') && $request->input('create_project')) {
+            return redirect()->route('projects.create')
+                             ->with('success', 'Client created successfully.');
+        }
 
+        return redirect()->route('clients.index')
+                         ->with('success', 'Client created successfully.');
+    }
 
     /**
      * Show the form for editing the specified client.
@@ -59,7 +62,7 @@ class ClientController extends Controller
         $client->update($request->validated());
 
         return redirect()->route('clients.index')
-            ->with('success', 'Client updated successfully.');
+                         ->with('success', 'Client updated successfully.');
     }
 
     /**
@@ -70,6 +73,6 @@ class ClientController extends Controller
         $client->delete();
 
         return redirect()->route('clients.index')
-            ->with('success', 'Client deleted successfully.');
+                         ->with('success', 'Client deleted successfully.');
     }
 }

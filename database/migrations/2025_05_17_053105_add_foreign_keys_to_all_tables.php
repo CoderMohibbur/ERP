@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    public function up(): void {
+    public function up(): void
+    {
         // Employees
         Schema::table('employees', function (Blueprint $table) {
             $table->foreign('department_id')->references('id')->on('departments')->cascadeOnDelete();
@@ -62,12 +63,15 @@ return new class extends Migration {
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
         });
 
-        // Invoices
+        // ✅ Invoices (Fixed)
         Schema::table('invoices', function (Blueprint $table) {
             $table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
             $table->foreign('project_id')->references('id')->on('projects')->nullOnDelete();
-            $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
+           $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete(); // ✅ ঠিক এভাবে হতে হবে
+
         });
+
+
 
         Schema::table('invoice_items', function (Blueprint $table) {
             $table->foreign('invoice_id')->references('id')->on('invoices')->cascadeOnDelete();
@@ -79,7 +83,8 @@ return new class extends Migration {
         });
     }
 
-    public function down(): void {
+    public function down(): void
+    {
         // Drop foreign keys in reverse order
 
         Schema::table('payments', function (Blueprint $table) {
