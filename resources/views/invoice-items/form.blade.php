@@ -1,62 +1,59 @@
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {{-- Invoice --}}
-    <div>
-        <label for="invoice_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Invoice</label>
-        <select name="invoice_id" id="invoice_id"
-            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500">
-            @foreach ($invoices as $id => $number)
-                <option value="{{ $id }}"
-                    {{ old('invoice_id', $invoiceItem->invoice_id ?? '') == $id ? 'selected' : '' }}>
-                    {{ $number }}
-                </option>
-            @endforeach
-        </select>
-    </div>
+<div id="item-list">
+    <div class="item-row grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+        <input type="text" name="items[0][item_name]" placeholder="Item Name"
+               class="col-span-1 md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
 
-    {{-- Item Name --}}
-    <div>
-        <label for="item_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</label>
-        <input type="text" name="item_name" id="item_name"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value="{{ old('item_name', $invoiceItem->item_name ?? '') }}">
-    </div>
+        <input type="number" name="items[0][quantity]" placeholder="Qty" min="1"
+               class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
 
-    {{-- Item Code --}}
-    <div>
-        <label for="item_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Item Code</label>
-        <input type="text" name="item_code" id="item_code"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value="{{ old('item_code', $invoiceItem->item_code ?? '') }}">
-    </div>
+        <input type="number" name="items[0][unit_price]" placeholder="Unit Price" step="0.01"
+               class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
 
-    {{-- Quantity --}}
-    <div>
-        <label for="quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
-        <input type="number" name="quantity" id="quantity" min="1"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value="{{ old('quantity', $invoiceItem->quantity ?? 1) }}">
-    </div>
+        <input type="number" name="items[0][tax_percent]" placeholder="Tax %" step="0.01"
+               class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
 
-    {{-- Unit Price --}}
-    <div>
-        <label for="unit_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit Price</label>
-        <input type="number" step="0.01" name="unit_price" id="unit_price"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value="{{ old('unit_price', $invoiceItem->unit_price ?? '') }}">
-    </div>
+        <input type="text" name="items[0][description]" placeholder="Description"
+               class="col-span-1 md:col-span-1 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
 
-    {{-- Tax Percent --}}
-    <div>
-        <label for="tax_percent" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tax Percent (%)</label>
-        <input type="number" step="0.01" name="tax_percent" id="tax_percent"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value="{{ old('tax_percent', $invoiceItem->tax_percent ?? '') }}">
-    </div>
-
-    {{-- Description (Full width) --}}
-    <div class="md:col-span-2">
-        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-        <textarea name="description" id="description" rows="4"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500">{{ old('description', $invoiceItem->description ?? '') }}</textarea>
+        <button type="button" class="remove-item px-3 py-2 bg-red-600 text-white rounded">×</button>
     </div>
 </div>
+
+<div class="mb-4">
+    <button type="button" id="add-item"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        + Add Item
+    </button>
+</div>
+
+@push('scripts')
+<script>
+    let index = 1;
+    document.getElementById('add-item').addEventListener('click', function () {
+        const itemList = document.getElementById('item-list');
+        const newRow = document.createElement('div');
+        newRow.classList.add('item-row', 'grid', 'grid-cols-1', 'md:grid-cols-6', 'gap-4', 'mb-4');
+        newRow.innerHTML = `
+            <input type="text" name="items[${index}][item_name]" placeholder="Item Name"
+                   class="col-span-1 md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+            <input type="number" name="items[${index}][quantity]" placeholder="Qty" min="1"
+                   class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+            <input type="number" name="items[${index}][unit_price]" placeholder="Unit Price" step="0.01"
+                   class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+            <input type="number" name="items[${index}][tax_percent]" placeholder="Tax %" step="0.01"
+                   class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+            <input type="text" name="items[${index}][description]" placeholder="Description"
+                   class="col-span-1 md:col-span-1 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+            <button type="button" class="remove-item px-3 py-2 bg-red-600 text-white rounded">×</button>
+        `;
+        itemList.appendChild(newRow);
+        index++;
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.classList.contains('remove-item')) {
+            e.target.closest('.item-row').remove();
+        }
+    });
+</script>
+@endpush
