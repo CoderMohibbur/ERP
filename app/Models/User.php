@@ -1,77 +1,125 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+namespace App\Models;
 
-return new class extends Migration
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Jetstream\HasProfilePhoto;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
 {
-    public function up(): void
+    use HasApiTokens;
+    use HasFactory;
+    use HasProfilePhoto;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
+    use SoftDeletes; // ✅ Enable soft delete support
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        // Jetstream defaults
+        'name',
+        'email',
+        'password',
+        'profile_photo_path',
+        'current_team_id',
+
+        // Enterprise additions
+        'role_id',
+        'is_active',
+        'last_login_at',
+        'timezone',
+        'language',
+        'ip_address',
+        'login_device',
+        'user_agent',
+        'profile_completed',
+        'force_password_reset',
+        'last_password_change_at',
+        'api_limit',
+        'session_token',
+        'created_by',
+        'updated_by',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'two_factor_recovery_codes',
+        'two_factor_secret',
+        'session_token',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'profile_photo_url',
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-
-            // ✅ Jetstream default fields
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->unsignedBigInteger('current_team_id')->nullable(); // Jetstream Team support
-            $table->string('profile_photo_path', 2048)->nullable();
-
-            // ✅ Recommended Enterprise Fields
-            $table->foreignId('role_id')->nullable()->constrained()->nullOnDelete(); // Optional RBAC
-            $table->boolean('is_active')->default(true);
-            $table->timestamp('last_login_at')->nullable();
-            $table->string('timezone', 100)->nullable();
-            $table->string('language', 20)->default('en');
-            $table->string('ip_address', 45)->nullable();
-            $table->string('login_device')->nullable();
-            $table->text('user_agent')->nullable();
-
-            // ✅ Meta Fields
-            $table->boolean('profile_completed')->default(false);
-            $table->boolean('force_password_reset')->default(false);
-            $table->timestamp('last_password_change_at')->nullable();
-            $table->integer('api_limit')->nullable();
-            $table->string('session_token')->nullable();
-
-            // ✅ Audit Tracking
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
-
-            // ✅ Soft delete + timestamps
-            $table->softDeletes(); // 🔁 soft delete support enabled
-            $table->timestamps();
-
-            // ✅ Indexing for performance
-            $table->index(['email', 'is_active']);
-            $table->index('last_login_at');
-        });
-
-        // ✅ Password Reset Tokens
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
-
-        // ✅ Session Tracking
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
+        return [
+            'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'last_password_change_at' => 'datetime',
+            'is_active' => 'boolean',
+            'profile_completed' => 'boolean',
+            'force_password_reset' => 'boolean',
+            'api_limit' => 'integer',
+            'password' => 'hashed',
+        ];
     }
 
-    public function down(): void
+    /**
+     * Relationship: Role (if exists)
+     */
+    public function role()
     {
-        Schema::dropIfExists('sessions');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('users');
+        return $this->belongsTo(Role::class);
     }
-};
+
+    /**
+     * Relationship: Creator
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Relationship: Updater
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Scope: Only active users
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+}
