@@ -2,33 +2,67 @@
 
 namespace App\Models;
 
-use App\Models\User;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
 {
     use SoftDeletes;
-    protected $fillable = ['name', 'email', 'phone', 'address', 'created_by'];
-    public function creator()
+
+    /**
+     * Fillable attributes (safe for mass-assignment)
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'phone',
+        'address',
+        'company_name',
+        'industry_type',
+        'website',
+        'tax_id',
+        'status',
+        'custom_fields',
+        'created_by',
+        'updated_by',
+    ];
+
+    /**
+     * Attribute casting
+     */
+    protected $casts = [
+        'custom_fields' => 'array',
+    ];
+
+    /**
+     * 🔗 Belongs to: Created by user
+     */
+    public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    public function contacts()
+
+    /**
+     * 🔗 Belongs to: Updated by user
+     */
+    public function updatedBy()
     {
-        return $this->hasMany(ClientContact::class);
+        return $this->belongsTo(User::class, 'updated_by');
     }
-    public function notes()
+
+    /**
+     * 🔍 Scope: Active clients only
+     */
+    public function scopeActive($query)
     {
-        return $this->hasMany(ClientNote::class);
+        return $query->where('status', 'active');
     }
-    public function projects()
+
+    /**
+     * 🔍 Scope: Filter by industry
+     */
+    public function scopeIndustry($query, $industry)
     {
-        return $this->hasMany(Project::class);
-    }
-    public function invoices()
-    {
-        return $this->hasMany(Invoice::class);
+        return $query->where('industry_type', $industry);
     }
 }

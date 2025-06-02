@@ -6,34 +6,41 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('attendance_settings', function (Blueprint $table) {
             $table->id();
 
-            // সময় ও নিয়মাবলী
-            $table->time('office_start');             // অফিস শুরু সময়
-            $table->time('start_time')->nullable();   // কার্যকর শুরু সময়
-            $table->time('end_time')->nullable();     // কার্যকর শেষ সময়
-            $table->integer('grace_minutes');         // ছাড়ের সময়
-            $table->integer('half_day_after')->nullable(); // কত মিনিট পরে হাফডে হবে
+            // 🕒 Office Timing Rules
+            $table->time('office_start');               // অফিস শুরুর সময়
+            $table->time('start_time')->nullable();     // কার্যকর শুরুর সময় (flexible)
+            $table->time('end_time')->nullable();       // কার্যকর শেষ সময়
+            $table->integer('grace_minutes')->default(10); // ছাড়ের সময় (late tolerated)
+            $table->integer('half_day_after')->nullable(); // কত মিনিট পর হাফডে হবে
+            $table->integer('working_days')->default(26);  // মাসে মোট কার্যদিবস
+            $table->json('weekend_days')->nullable();      // [ "Friday", "Saturday" ]
 
-            // অন্যান্য সেটিংস
-            $table->integer('working_days');          // মাসে মোট কার্যদিবস
-            $table->json('weekend_days')->nullable(); // সাপ্তাহিক ছুটি (array)
-            $table->string('note')->nullable();       // নোট
+            // 🌍 Remote Work Support
+            $table->string('timezone', 100)->default('Asia/Dhaka');
+            $table->boolean('allow_remote_attendance')->default(false);
 
-            // টাইমস্ট্যাম্প
+            // 📝 Notes
+            $table->string('note')->nullable();
+
+            // 🔐 Audit (Jetstream-compatible)
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+
+            // 🗑️ Safe Delete + Timestamps
+            $table->softDeletes();
             $table->timestamps();
+
+            // ⚡ Indexes
+            $table->index('timezone');
+            $table->index('allow_remote_attendance');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('attendance_settings');
