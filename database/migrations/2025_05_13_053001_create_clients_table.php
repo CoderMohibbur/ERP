@@ -30,8 +30,9 @@ return new class extends Migration
             $table->json('custom_fields')->nullable(); // Optional: { "LinkedIn": "...", "Notes": "..." }
 
             // 🔐 Audit
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+
 
             // 🗑️ Safe delete + timestamps
             $table->softDeletes();

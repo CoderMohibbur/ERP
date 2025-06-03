@@ -20,8 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('current_team_id')->nullable(); // Jetstream Team support
             $table->string('profile_photo_path', 2048)->nullable();
 
-            // ✅ Recommended Enterprise Fields
-            $table->foreignId('role_id')->nullable()->constrained()->nullOnDelete(); // Optional RBAC
+            $table->unsignedBigInteger('role_id')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_login_at')->nullable();
             $table->string('timezone', 100)->nullable();
@@ -38,8 +37,8 @@ return new class extends Migration
             $table->string('session_token')->nullable();
 
             // ✅ Audit Tracking
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
 
             // ✅ Soft delete + timestamps
             $table->softDeletes(); // 🔁 soft delete support enabled

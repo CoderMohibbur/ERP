@@ -12,7 +12,9 @@ return new class extends Migration
             $table->id();
 
             // 🔗 Employee Relation
-            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
+            $table->unsignedBigInteger('employee_id');
+            
+
 
             // 📅 Attendance Info
             $table->date('date');
@@ -33,7 +35,7 @@ return new class extends Migration
             $table->enum('device_type', ['web', 'mobile', 'kiosk'])->nullable();
 
             // 🔐 Optional Audit
-            $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('verified_by')->nullable();
 
             // 🗑️ Soft Deletes + Timestamps
             $table->softDeletes();

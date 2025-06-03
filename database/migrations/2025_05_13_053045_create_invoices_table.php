@@ -8,50 +8,48 @@ return new class extends Migration
 {
     public function up(): void
     {
+
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
 
-            // 🔢 Invoice Core
-            $table->string('invoice_number')->unique(); // e.g., INV-1001
+            // 🔹 Invoice Details
+            $table->string('invoice_number')->unique();
             $table->enum('invoice_type', ['proforma', 'final'])->default('final');
             $table->enum('status', ['draft', 'sent', 'paid', 'overdue'])->default('draft');
 
             // 🔗 Relations
-            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
-            $table->foreignId('project_id')->nullable()->constrained('projects')->nullOnDelete();
-            $table->foreignId('terms_id')->nullable()->constrained('terms_and_conditions')->nullOnDelete(); // reusable terms
-            $table->foreignId('issued_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('client_id');
+            $table->unsignedBigInteger('project_id')->nullable();
+            $table->unsignedBigInteger('terms_id')->nullable();
+            $table->unsignedBigInteger('issued_by')->nullable();
+            $table->unsignedBigInteger('approved_by')->nullable();
 
-            // 💵 Currency
+            // 💵 Currency & Amounts
             $table->string('currency', 10)->default('BDT');
-            $table->decimal('currency_rate', 10, 4)->default(1); // exchange rate
-
-            // 📅 Dates
+            $table->decimal('currency_rate', 10, 4)->default(1);
             $table->date('issue_date');
             $table->date('due_date');
-
-            // 💰 Amounts
-            $table->decimal('sub_total', 12, 2)->default(0);
+            $table->decimal('sub_total', 14, 4)->default(0);
             $table->enum('discount_type', ['flat', 'percentage'])->nullable();
-            $table->decimal('discount_value', 12, 2)->nullable();
+            $table->decimal('discount_value', 14, 4)->nullable();
             $table->decimal('tax_rate', 5, 2)->nullable();
-            $table->decimal('total_amount', 12, 2)->default(0);
-            $table->decimal('paid_amount', 12, 2)->default(0);
-            $table->decimal('due_amount', 12, 2)->default(0);
+            $table->decimal('total_amount', 14, 4)->default(0);
+            $table->decimal('paid_amount', 14, 4)->default(0);
+            $table->decimal('due_amount', 14, 4)->default(0);
 
-            // 📝 Extra
+            // 📉 Notes & Metadata
             $table->text('notes')->nullable();
+            $table->json('metadata')->nullable();
 
             // 🔐 Audit
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
 
-            // 🗑️ Soft delete + timestamps
+            // 🗃️ Cleanup & Timestamps
             $table->softDeletes();
             $table->timestamps();
 
-            // ⚡ Indexing
+            // ⚡ Indexes
             $table->index(['client_id', 'project_id']);
             $table->index(['status', 'invoice_type']);
             $table->index(['issue_date', 'due_date']);

@@ -12,10 +12,6 @@ return new class extends Migration
             $table->id();
 
             // 🔗 Relationships
-            $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
-            $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('parent_task_id')->nullable()->constrained('tasks')->nullOnDelete();
-            $table->foreignId('dependency_task_id')->nullable()->constrained('tasks')->nullOnDelete();
 
             // 🧾 Task Info
             $table->string('title');
@@ -36,8 +32,13 @@ return new class extends Migration
             $table->text('note')->nullable();
 
             // 🔐 Audit (Jetstream-compatible)
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('project_id');
+            $table->unsignedBigInteger('assigned_to')->nullable();
+            $table->unsignedBigInteger('parent_task_id')->nullable();
+            $table->unsignedBigInteger('dependency_task_id')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+
 
             // 🗑️ Soft Delete & timestamps
             $table->softDeletes();

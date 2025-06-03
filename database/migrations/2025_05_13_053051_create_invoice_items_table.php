@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
 
             // 🔗 Relation
-            $table->foreignId('invoice_id')->constrained('invoices')->onDelete('cascade');
+            $table->unsignedBigInteger('invoice_id');
 
             // 📦 Item Info
             $table->string('item_code')->nullable(); // optional SKU
@@ -22,7 +22,7 @@ return new class extends Migration
             // 📐 Quantity & Unit
             $table->integer('quantity')->default(1);
             $table->string('unit', 20)->default('pcs'); // pcs, kg, hour, etc.
-            $table->foreignId('item_category_id')->nullable()->constrained('item_categories')->nullOnDelete();
+            $table->unsignedBigInteger('item_category_id')->nullable();
 
             // 💰 Pricing
             $table->decimal('unit_price', 12, 2);
@@ -30,8 +30,8 @@ return new class extends Migration
             $table->decimal('total', 14, 2);
 
             // 🔐 Audit
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
 
             // 🗑️ Soft Delete + Timestamps
             $table->softDeletes();

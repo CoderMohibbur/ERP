@@ -13,7 +13,6 @@ return new class extends Migration
 
             // 🧾 Project Info
             $table->string('title');
-            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->text('description')->nullable();
 
             // 📅 Dates
@@ -31,8 +30,10 @@ return new class extends Migration
             $table->enum('status', ['pending', 'in_progress', 'completed', 'cancelled'])->default('pending');
 
             // 🛡️ Audit
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('client_id');
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+
 
             // 🗑️ Soft delete + timestamps
             $table->softDeletes();
