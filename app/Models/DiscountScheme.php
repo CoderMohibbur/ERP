@@ -13,6 +13,7 @@ class DiscountScheme extends Model
         'name',
         'type',
         'value',
+        'discount_type_id',
         'applies_to',
         'reference_id',
         'valid_from',
@@ -34,7 +35,7 @@ class DiscountScheme extends Model
         'updated_by'  => 'integer',
     ];
 
-    // 🧠 Scopes
+    // 🧠 Scope: Only Active and Valid Discounts
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
@@ -48,19 +49,17 @@ class DiscountScheme extends Model
             });
     }
 
-    // 🔗 Optional Polymorphic/Custom Relations
+    // 🔗 Applies to Dynamic Entity (invoice_item, category, client)
     public function reference()
     {
-        // For dynamic relationship with item, category, client, etc.
         return match ($this->applies_to) {
-            'item'     => $this->belongsTo(InvoiceItem::class, 'reference_id'),
-            'category' => $this->belongsTo(Category::class, 'reference_id'),
-            'client'   => $this->belongsTo(Client::class, 'reference_id'),
-            default    => null,
+            'invoice_item' => $this->belongsTo(InvoiceItem::class, 'reference_id'),
+            'client'       => $this->belongsTo(Client::class, 'reference_id'),
+            default        => null,
         };
     }
 
-    // 👤 Created By / Updated By
+    // 👤 Creator / Updater Relations
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -69,5 +68,11 @@ class DiscountScheme extends Model
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // 🔗 Discount Type Relation
+    public function type()
+    {
+        return $this->belongsTo(DiscountType::class, 'discount_type_id');
     }
 }

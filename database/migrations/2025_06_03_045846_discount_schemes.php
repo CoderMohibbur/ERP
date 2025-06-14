@@ -10,6 +10,10 @@ return new class extends Migration {
         Schema::create('discount_schemes', function (Blueprint $table) {
             $table->id();
 
+            $table->unsignedBigInteger('discount_type_id')->nullable();
+            $table->foreign('discount_type_id')->references('id')->on('discount_types')->nullOnDelete();
+
+
             // 📋 Discount Info
             $table->string('name');                        // e.g., Eid Offer, 15% Off
             $table->enum('type', ['flat', 'percentage']);  // Flat amount or percentage
