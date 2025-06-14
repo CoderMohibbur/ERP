@@ -1,48 +1,51 @@
 <x-app-layout>
-    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Add Client Contact</h2>
+    <div class="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            Add Contact for <span class="text-blue-600">{{ $client->name }}</span>
+        </h2>
 
-    <form action="{{ route('client-contacts.store') }}" method="POST">
-        @csrf
+        {{-- Validation Errors --}}
+        <x-validation-errors class="mb-4" />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {{-- Client --}}
-            <div>
-                <label for="client_id" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Client</label>
-                <select name="client_id" id="client_id"
-                        class="w-full px-4 py-2 text-sm border rounded-md dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                    @foreach ($clients as $id => $name)
-                        <option value="{{ $id }}" {{ old('client_id') == $id ? 'selected' : '' }}>
-                            {{ $name }}
-                        </option>
-                    @endforeach
-                </select>
+        {{-- Contact Create Form --}}
+        <form method="POST" action="{{ route('client-contacts.store', $client->id) }}">
+            @csrf
+
+            <div class="grid grid-cols-1 gap-5">
+                {{-- Type --}}
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Contact Type</label>
+                    <select name="type" id="type" required
+                            class="w-full mt-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">Select Type</option>
+                        @foreach(['phone', 'email', 'whatsapp', 'facebook', 'linkedin', 'other'] as $type)
+                            <option value="{{ $type }}" {{ old('type') === $type ? 'selected' : '' }}>
+                                {{ ucfirst($type) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Value --}}
+                <div>
+                    <label for="value" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Value</label>
+                    <input type="text" name="value" id="value" value="{{ old('value') }}" required
+                           class="w-full mt-1 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                           placeholder="Enter phone number, email, or URL">
+                </div>
             </div>
 
-            {{-- Type --}}
-            <div>
-                <label for="type" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Type</label>
-                <select name="type" id="type"
-                        class="w-full px-4 py-2 text-sm border rounded-md dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                    <option value="name" {{ old('type') == 'name' ? 'selected' : '' }}>Name</option>
-                    <option value="email" {{ old('type') == 'email' ? 'selected' : '' }}>Email</option>
-                    <option value="phone" {{ old('type') == 'phone' ? 'selected' : '' }}>Phone</option>
-                    <option value="designation" {{ old('type') == 'designation' ? 'selected' : '' }}>Designation</option>
-                </select>
+            {{-- Actions --}}
+            <div class="flex justify-end items-center mt-6">
+                <a href="{{ route('client-contacts.index', $client->id) }}"
+                   class="mr-3 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:dark:text-red-500">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    Save
+                </button>
             </div>
-
-            {{-- Value --}}
-            <div class="sm:col-span-2">
-                <label for="value" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Value</label>
-                <input type="text" name="value" id="value" value="{{ old('value') }}"
-                       class="w-full px-4 py-2 text-sm border rounded-md dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-            </div>
-        </div>
-
-        <div class="flex justify-end items-center mt-6">
-            <a href="{{ route('client-contacts.index') }}"
-               class="mr-3 text-gray-600 dark:text-gray-300 hover:text-red-500">Cancel</a>
-            <button type="submit"
-                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Save</button>
-        </div>
-    </form>
+        </form>
+    </div>
 </x-app-layout>

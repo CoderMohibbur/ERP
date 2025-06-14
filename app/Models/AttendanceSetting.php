@@ -9,9 +9,6 @@ class AttendanceSetting extends Model
 {
     use SoftDeletes;
 
-    /**
-     * Fillable attributes
-     */
     protected $fillable = [
         'office_start',
         'start_time',
@@ -27,22 +24,19 @@ class AttendanceSetting extends Model
         'updated_by',
     ];
 
-    /**
-     * Cast attributes to appropriate types
-     */
     protected $casts = [
-        'office_start' => 'datetime:H:i',
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
-        'grace_minutes' => 'integer',
-        'half_day_after' => 'integer',
-        'working_days' => 'integer',
-        'weekend_days' => 'array',
+        'office_start'             => 'datetime:H:i',
+        'start_time'               => 'datetime:H:i',
+        'end_time'                 => 'datetime:H:i',
+        'grace_minutes'           => 'integer',
+        'half_day_after'          => 'integer',
+        'working_days'            => 'integer',
+        'weekend_days'            => 'array',
         'allow_remote_attendance' => 'boolean',
     ];
 
     /**
-     * 🔗 Relationship: created by
+     * 🔗 Relationship: created by user
      */
     public function createdBy()
     {
@@ -50,7 +44,7 @@ class AttendanceSetting extends Model
     }
 
     /**
-     * 🔗 Relationship: updated by
+     * 🔗 Relationship: updated by user
      */
     public function updatedBy()
     {
@@ -58,7 +52,7 @@ class AttendanceSetting extends Model
     }
 
     /**
-     * 🔍 Scope: active remote attendance enabled
+     * 🔍 Scope: Remote Enabled Settings
      */
     public function scopeRemoteEnabled($query)
     {

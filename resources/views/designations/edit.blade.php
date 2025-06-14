@@ -8,18 +8,44 @@
             @csrf
             @method('PUT')
 
-            <div class="mb-5">
+            <div class="mb-4">
                 <label for="name" class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Designation Name
+                    Designation Name <span class="text-red-500">*</span>
                 </label>
-                <input type="text" name="name" id="name" value="{{ old('name', $designation->name) }}"
-                       class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500"
-                       required>
+                <input type="text" name="name" id="name"
+                       value="{{ old('name', $designation->name) }}" required
+                       class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
             </div>
 
-            <div class="flex justify-end items-center mt-6">
+            <div class="mb-4">
+                <label for="code" class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Code <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="code" id="code"
+                       value="{{ old('code', $designation->code) }}" maxlength="10" required
+                       class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+            </div>
+
+            <div class="mb-4">
+                <label for="level" class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Level (1 = CEO, 5 = Staff)
+                </label>
+                <input type="number" name="level" id="level"
+                       value="{{ old('level', $designation->level) }}" min="1" max="10"
+                       class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
+            </div>
+
+            <div class="mb-5">
+                <label for="description" class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Description
+                </label>
+                <textarea name="description" id="description" rows="3"
+                          class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">{{ old('description', $designation->description) }}</textarea>
+            </div>
+
+            <div class="flex justify-end mt-6">
                 <a href="{{ route('designations.index') }}"
-                   class="mr-3 text-gray-600 dark:text-gray-300 hover:text-red-500 hover:dark:text-red-500">
+                   class="mr-3 text-gray-600 dark:text-gray-300 hover:underline">
                     Cancel
                 </a>
                 <button type="submit"

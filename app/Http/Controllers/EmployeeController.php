@@ -3,18 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
-use Illuminate\View\View;
 use App\Models\Department;
 use App\Models\Designation;
+use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 
 class EmployeeController extends Controller
 {
-    
-
+    /**
+     * Display a listing of employees with filters.
+     */
     public function index(Request $request): View
     {
         $query = Employee::with(['department', 'designation']);
@@ -24,41 +26,39 @@ class EmployeeController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        // 👤 Filter by employee_id
+        // 🎯 Filter by specific employee
         if ($request->filled('employee_id')) {
             $query->where('id', $request->employee_id);
         }
 
-        // 🗓️ Filter by join_date month
+        // 📅 Filter by join month
         if ($request->filled('month')) {
             $query->whereMonth('join_date', $request->month);
         }
 
-        // 📅 Filter by exact join_date
+        // 📆 Filter by exact join date
         if ($request->filled('join_date')) {
             $query->whereDate('join_date', $request->join_date);
         }
 
-        $employees = $query->latest()->paginate(10)->withQueryString(); // pagination with filters
-        $allEmployees = Employee::select('id', 'name')->orderBy('name')->get(); // for dropdown
+        $employees = $query->latest()->paginate(10)->withQueryString();
+        $allEmployees = Employee::select('id', 'name')->orderBy('name')->get();
 
         return view('employees.index', compact('employees', 'allEmployees'));
     }
-
-
-
 
     /**
      * Show the form for creating a new employee.
      */
     public function create(): View
     {
-        $departments = Department::orderBy('id', 'desc')->pluck('name', 'id');
-        $designations = Designation::orderBy('id', 'desc')->pluck('name', 'id');
+        $departments = Department::pluck('name', 'id');
+        $designations = Designation::pluck('name', 'id');
+
         return view('employees.create', compact('departments', 'designations'));
     }
 
@@ -73,29 +73,28 @@ class EmployeeController extends Controller
             $data['photo'] = $request->file('photo')->store('uploads/employees', 'public');
         }
 
+        $data['created_by'] = Auth::id();
+
         $employee = Employee::create($data);
 
         if ($request->has('from_task_form')) {
             return redirect()->route('tasks.create')
                 ->with('new_employee_id', $employee->id)
-                ->withInput() // ✅ এটা যোগ করুন
-                ->with('success', 'Employee created successfully.');
+                ->withInput()
+                ->with('success', '✅ Employee created successfully.');
         }
 
-        return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
+        return redirect()->route('employees.index')->with('success', '✅ Employee created successfully.');
     }
-
-
-
-
 
     /**
      * Show the form for editing the specified employee.
      */
     public function edit(Employee $employee): View
     {
-        $departments = Department::orderBy('id', 'desc')->pluck('name', 'id');
-        $designations = Designation::orderBy('id', 'desc')->pluck('name', 'id');
+        $departments = Department::pluck('name', 'id');
+        $designations = Designation::pluck('name', 'id');
+
         return view('employees.edit', compact('employee', 'departments', 'designations'));
     }
 
@@ -112,18 +111,17 @@ class EmployeeController extends Controller
 
         $employee->update($data);
 
-        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
+        return redirect()->route('employees.index')->with('success', '✅ Employee updated successfully.');
     }
 
-
     /**
-     * Remove the specified employee from storage.
+     * Remove the specified employee from storage (soft delete).
      */
     public function destroy(Employee $employee): RedirectResponse
     {
         $employee->delete();
 
         return redirect()->route('employees.index')
-            ->with('success', 'Employee deleted successfully.');
+                         ->with('success', '🗑️ Employee deleted successfully.');
     }
 }

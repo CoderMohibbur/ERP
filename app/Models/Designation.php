@@ -10,7 +10,7 @@ class Designation extends Model
     use SoftDeletes;
 
     /**
-     * Fillable attributes for mass assignment
+     * Fillable fields from migration
      */
     protected $fillable = [
         'name',
@@ -22,49 +22,36 @@ class Designation extends Model
     ];
 
     /**
-     * Casts for clean type handling
+     * Casts
      */
     protected $casts = [
-        'level' => 'integer',
+        'name'        => 'string',
+        'code'        => 'string',
+        'description' => 'string',
+        'level'       => 'integer',
     ];
 
     /**
-     * 🔗 Created by admin/user
+     * 🔗 Created By (User)
      */
-    public function createdBy()
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
-     * 🔗 Updated by admin/user
+     * 🔗 Updated By (User)
      */
-    public function updatedBy()
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
-     * 🔍 Scope: Executive Level Designations
+     * 🔍 Scope: Filter by level (optional use)
      */
-    public function scopeExecutive($query)
+    public function scopeLevel($query, $level)
     {
-        return $query->where('level', '<=', 2);
-    }
-
-    /**
-     * 🔍 Scope: Ordered by hierarchy
-     */
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('level');
-    }
-
-    /**
-     * 🔗 Optional: All employees under this designation
-     */
-    public function employees()
-    {
-        return $this->hasMany(Employee::class);
+        return $query->where('level', $level);
     }
 }

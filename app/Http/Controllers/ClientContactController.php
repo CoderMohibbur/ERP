@@ -4,80 +4,79 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\ClientContact;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Http\Requests\StoreClientContactRequest;
-use App\Http\Requests\UpdateClientContactRequest;
+use Illuminate\Http\RedirectResponse;
 
 class ClientContactController extends Controller
 {
     /**
-     * Show all client contacts
+     * Display a list of contacts for a specific client.
      */
-    public function index(): View
+    public function index(Client $client)
     {
-        $contacts = ClientContact::with('client')->latest()->paginate(10);
-        return view('client-contacts.index', compact('contacts'));
+        $contacts = $client->contacts()->latest()->paginate(10);
+        return view('client-contacts.index', compact('client', 'contacts'));
+    }
+
+
+
+    /**
+     * Show form to create a new contact for a client.
+     */
+    public function create(Client $client): View
+    {
+        return view('client-contacts.create', compact('client'));
     }
 
     /**
-     * Show the form to create a client contact
+     * Store a newly created contact.
      */
-    public function create(): View
+    public function store(Request $request, Client $client): RedirectResponse
     {
-        $clients = Client::pluck('name', 'id');
-        return view('client-contacts.create', compact('clients'));
+        $data = $request->validate([
+            'type'  => 'required|string|max:50',
+            'value' => 'required|string|max:255',
+        ]);
+
+        $client->contacts()->create($data);
+
+        return redirect()->route('client-contacts.index', $client->id)
+            ->with('success', 'Contact added successfully.');
     }
 
     /**
-     * Store a single client contact based on selected type & value
+     * Show form to edit a contact.
      */
-    public function store(StoreClientContactRequest $request): RedirectResponse
+    public function edit(Client $client, ClientContact $clientContact): View
     {
-        $clientId = $request->input('client_id');
-        $type = $request->input('type');
-        $value = $request->input('value');
-
-        if ($type && $value) {
-            ClientContact::create([
-                'client_id' => $clientId,
-                'type' => $type,
-                'value' => $value,
-            ]);
-        }
-
-        return redirect()->route('client-contacts.index')
-            ->with('success', 'Client contact created successfully.');
+        return view('client-contacts.edit', compact('client', 'clientContact'));
     }
 
     /**
-     * Show the form to edit a client contact
+     * Update the specified contact.
      */
-    public function edit(ClientContact $clientContact): View
+    public function update(Request $request, Client $client, ClientContact $clientContact): RedirectResponse
     {
-        $clients = Client::pluck('name', 'id');
-        return view('client-contacts.edit', compact('clientContact', 'clients'));
+        $data = $request->validate([
+            'type'  => 'required|string|max:50',
+            'value' => 'required|string|max:255',
+        ]);
+
+        $clientContact->update($data);
+
+        return redirect()->route('client-contacts.index', $client->id)
+            ->with('success', 'Contact updated successfully.');
     }
 
     /**
-     * Update a client contact
+     * Remove the contact.
      */
-    public function update(UpdateClientContactRequest $request, ClientContact $clientContact): RedirectResponse
-    {
-        $clientContact->update($request->validated());
-
-        return redirect()->route('client-contacts.index')
-            ->with('success', 'Client contact updated successfully.');
-    }
-
-    /**
-     * Delete a client contact
-     */
-    public function destroy(ClientContact $clientContact): RedirectResponse
+    public function destroy(Client $client, ClientContact $clientContact): RedirectResponse
     {
         $clientContact->delete();
 
-        return redirect()->route('client-contacts.index')
-            ->with('success', 'Client contact deleted successfully.');
+        return redirect()->route('client-contacts.index', $client->id)
+            ->with('success', 'Contact deleted successfully.');
     }
 }

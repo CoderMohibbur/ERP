@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\StoreDepartmentRequest;
-use App\Http\Requests\UpdateDepartmentRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class DepartmentController extends Controller
@@ -31,18 +29,16 @@ class DepartmentController extends Controller
     /**
      * Store a newly created department in storage.
      */
-    public function store(StoreDepartmentRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        Department::create($request->validated());
+        $request->validate([
+            'name' => 'required|string|max:255|unique:departments,name',
+        ]);
 
-        // 🔁 Determine where to redirect based on request type or referrer
-        if ($request->has('from_employee_form')) {
-            return redirect()->back()->with('success', '✅ New Department added successfully.');
-        }
+        Department::create($request->only('name'));
 
-        return redirect()->route('departments.index')->with('success', '✅ Department created successfully.');
+        return redirect()->route('departments.index')->with('success', 'Department created successfully.');
     }
-
 
     /**
      * Show the form for editing the specified department.
@@ -55,12 +51,15 @@ class DepartmentController extends Controller
     /**
      * Update the specified department in storage.
      */
-    public function update(UpdateDepartmentRequest $request, Department $department): RedirectResponse
+    public function update(Request $request, Department $department): RedirectResponse
     {
-        $department->update($request->validated());
+        $request->validate([
+            'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
+        ]);
 
-        return redirect()->route('departments.index')
-            ->with('success', 'Department updated successfully.');
+        $department->update($request->only('name'));
+
+        return redirect()->route('departments.index')->with('success', 'Department updated successfully.');
     }
 
     /**
@@ -70,7 +69,6 @@ class DepartmentController extends Controller
     {
         $department->delete();
 
-        return redirect()->route('departments.index')
-            ->with('success', 'Department deleted successfully.');
+        return redirect()->route('departments.index')->with('success', 'Department deleted successfully.');
     }
 }

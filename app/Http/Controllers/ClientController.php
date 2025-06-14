@@ -3,20 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
-use App\Models\User;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Http\Requests\StoreClientRequest;
-use App\Http\Requests\UpdateClientRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 
 class ClientController extends Controller
 {
     /**
-     * Display a listing of the clients.
+     * Display a listing of clients.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $clients = Client::with('creator')->latest()->paginate(10);
+        $query = Client::query();
+
+        // 🔍 Optional search by name/email/company
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                    ->orWhere('email', 'like', "%$search%")
+                    ->orWhere('company_name', 'like', "%$search%");
+            });
+        }
+
+        $clients = $query->latest()->paginate(10)->withQueryString();
+
         return view('clients.index', compact('clients'));
     }
 
@@ -31,20 +43,43 @@ class ClientController extends Controller
     /**
      * Store a newly created client in storage.
      */
-    public function store(StoreClientRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $data = $request->validated();
-        $data['created_by'] = auth()->id();
-        $client = Client::create($data);
+        // ✅ Convert custom_fields JSON string to array (if present)
+        if ($request->filled('custom_fields')) {
+            $decoded = json_decode($request->input('custom_fields'), true);
 
-        if ($request->has('create_project') && $request->input('create_project')) {
-            return redirect()->route('projects.create')
-                             ->with('success', 'Client created successfully.');
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return back()->withErrors([
+                    'custom_fields' => '❌ Invalid JSON format in custom fields.'
+                ])->withInput();
+            }
+
+            // overwrite request input
+            $request->merge(['custom_fields' => $decoded]);
         }
 
-        return redirect()->route('clients.index')
-                         ->with('success', 'Client created successfully.');
+        // ✅ Validation
+        $data = $request->validate([
+            'name'           => 'required|string|max:255',
+            'email'          => 'nullable|email|unique:clients,email',
+            'phone'          => 'nullable|string|max:20',
+            'address'        => 'nullable|string|max:255',
+            'company_name'   => 'nullable|string|max:255',
+            'industry_type'  => 'nullable|string|max:100',
+            'website'        => 'nullable|url|max:255',
+            'tax_id'         => 'nullable|string|max:100',
+            'status'         => 'required|in:active,inactive',
+            'custom_fields'  => 'nullable|array', // ✅ now it's safe
+        ]);
+
+        $data['created_by'] = Auth::id();
+
+        Client::create($data);
+
+        return redirect()->route('clients.index')->with('success', 'Client created successfully.');
     }
+
 
     /**
      * Show the form for editing the specified client.
@@ -57,13 +92,42 @@ class ClientController extends Controller
     /**
      * Update the specified client in storage.
      */
-    public function update(UpdateClientRequest $request, Client $client): RedirectResponse
+    public function update(Request $request, Client $client): RedirectResponse
     {
-        $client->update($request->validated());
+        // ✅ Convert JSON to array first
+        if ($request->filled('custom_fields')) {
+            $decoded = json_decode($request->input('custom_fields'), true);
 
-        return redirect()->route('clients.index')
-                         ->with('success', 'Client updated successfully.');
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return back()->withErrors([
+                    'custom_fields' => '❌ Invalid JSON format in custom fields.'
+                ])->withInput();
+            }
+
+            $request->merge(['custom_fields' => $decoded]);
+        }
+
+        // ✅ Validation
+        $data = $request->validate([
+            'name'           => 'required|string|max:255',
+            'email'          => 'nullable|email|unique:clients,email,' . $client->id,
+            'phone'          => 'nullable|string|max:20',
+            'address'        => 'nullable|string|max:255',
+            'company_name'   => 'nullable|string|max:255',
+            'industry_type'  => 'nullable|string|max:100',
+            'website'        => 'nullable|url|max:255',
+            'tax_id'         => 'nullable|string|max:100',
+            'status'         => 'required|in:active,inactive',
+            'custom_fields'  => 'nullable|array',
+        ]);
+
+        $data['updated_by'] = Auth::id();
+
+        $client->update($data);
+
+        return redirect()->route('clients.index')->with('success', 'Client updated successfully.');
     }
+
 
     /**
      * Remove the specified client from storage.
@@ -72,7 +136,6 @@ class ClientController extends Controller
     {
         $client->delete();
 
-        return redirect()->route('clients.index')
-                         ->with('success', 'Client deleted successfully.');
+        return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
     }
 }

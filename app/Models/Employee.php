@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
 {
     use SoftDeletes;
+
+    /**
+     * Fillable fields
+     */
     protected $fillable = [
         'name',
         'email',
@@ -17,42 +20,77 @@ class Employee extends Model
         'photo',
         'department_id',
         'designation_id',
-        'created_by'
+        'created_by',
     ];
-    protected $dates = ['join_date'];
+
+    /**
+     * Cast attributes
+     */
+    protected $casts = [
+        'join_date' => 'datetime',
+    ];
+
+    /**
+     * 🔗 Department relation
+     */
     public function department()
     {
         return $this->belongsTo(Department::class);
     }
+
+    /**
+     * 🔗 Designation relation
+     */
     public function designation()
     {
         return $this->belongsTo(Designation::class);
     }
+
+    /**
+     * 🔗 Created By (User)
+     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * 🔗 Attendance records
+     */
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
     }
+
+    /**
+     * 🔗 Tasks directly assigned
+     */
     public function assignedTasks()
     {
         return $this->hasMany(Task::class, 'assigned_to');
     }
+
+    /**
+     * 🔗 Belongs to many projects (pivot: project_employee)
+     */
     public function projects()
     {
         return $this->belongsToMany(Project::class, 'project_employee');
     }
+
+    /**
+     * 🔗 Belongs to many tasks (pivot: task_employee)
+     */
     public function tasks()
     {
         return $this->belongsToMany(Task::class, 'task_employee');
     }
 
-    // Accessor for formatted join date 
-    protected $casts = [
-    'join_date' => 'datetime'
-];
-
-
+    /**
+     * 🔍 Scope: active employees (soft-deleted excluded)
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('deleted_at');
+    }
 }

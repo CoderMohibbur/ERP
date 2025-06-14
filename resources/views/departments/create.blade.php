@@ -12,6 +12,7 @@
                     Department Name
                 </label>
                 <input type="text" name="name" id="name" value="{{ old('name') }}"
+                       required
                        class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-green-500 focus:border-green-500">
             </div>
 
@@ -27,5 +28,4 @@
             </div>
         </form>
     </div>
-    @include('layouts.admin-footer')
 </x-app-layout>

@@ -28,19 +28,19 @@ class Attendance extends Model
     ];
 
     /**
-     * Casts for attribute type conversion
+     * Attribute casting
      */
     protected $casts = [
-        'date' => 'date',
-        'in_time' => 'datetime:H:i',
-        'out_time' => 'datetime:H:i',
-        'worked_hours' => 'decimal:2',
-        'late_by_minutes' => 'integer',
+        'date'                => 'date',
+        'in_time'             => 'datetime:H:i',
+        'out_time'            => 'datetime:H:i',
+        'worked_hours'        => 'decimal:2',
+        'late_by_minutes'     => 'integer',
         'early_leave_minutes' => 'integer',
     ];
 
     /**
-     * 🔗 Relationship: employee
+     * 🔗 Employee Relationship
      */
     public function employee()
     {
@@ -48,7 +48,7 @@ class Attendance extends Model
     }
 
     /**
-     * 🔗 Relationship: verified by (HR/Admin)
+     * 🔗 Verified By (User / Admin)
      */
     public function verifiedBy()
     {
@@ -56,7 +56,7 @@ class Attendance extends Model
     }
 
     /**
-     * 🔍 Scope: Filter by status
+     * 🔍 Scope: Filter by single status
      */
     public function scopeStatus($query, $status)
     {
@@ -64,7 +64,7 @@ class Attendance extends Model
     }
 
     /**
-     * 🔍 Scope: Filter by date
+     * 🔍 Scope: Filter by exact date
      */
     public function scopeOnDate($query, $date)
     {
@@ -72,10 +72,26 @@ class Attendance extends Model
     }
 
     /**
-     * 🔍 Scope: Present or Late only
+     * 🔍 Scope: Present or Late
      */
     public function scopeActiveAttendances($query)
     {
         return $query->whereIn('status', ['present', 'late']);
+    }
+
+    /**
+     * 🔍 Scope: For a specific month
+     */
+    public function scopeInMonth($query, $month)
+    {
+        return $query->whereMonth('date', $month);
+    }
+
+    /**
+     * 🔍 Scope: Filter by device type
+     */
+    public function scopeDevice($query, $deviceType)
+    {
+        return $query->where('device_type', $deviceType);
     }
 }

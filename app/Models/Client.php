@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,7 +11,7 @@ class Client extends Model
     use SoftDeletes;
 
     /**
-     * Fillable attributes (safe for mass-assignment)
+     * Mass assignable fields
      */
     protected $fillable = [
         'name',
@@ -28,14 +29,15 @@ class Client extends Model
     ];
 
     /**
-     * Attribute casting
+     * Cast fields
      */
     protected $casts = [
         'custom_fields' => 'array',
+        'status'        => 'string',
     ];
 
     /**
-     * 🔗 Belongs to: Created by user
+     * 🔗 Relationship: Created By User
      */
     public function createdBy()
     {
@@ -43,7 +45,7 @@ class Client extends Model
     }
 
     /**
-     * 🔗 Belongs to: Updated by user
+     * 🔗 Relationship: Updated By User
      */
     public function updatedBy()
     {
@@ -51,7 +53,7 @@ class Client extends Model
     }
 
     /**
-     * 🔍 Scope: Active clients only
+     * 🔍 Scope: Only Active Clients
      */
     public function scopeActive($query)
     {
@@ -59,10 +61,36 @@ class Client extends Model
     }
 
     /**
-     * 🔍 Scope: Filter by industry
+     * 🔍 Scope: Filter by Company Name
      */
-    public function scopeIndustry($query, $industry)
+    public function scopeCompany($query, $company)
     {
-        return $query->where('industry_type', $industry);
+        return $query->where('company_name', 'like', "%{$company}%");
+    }
+
+    /**
+     * 💡 Accessor: Get custom field value easily
+     */
+    public function getCustomField($key)
+    {
+        return $this->custom_fields[$key] ?? null;
+    }
+
+    /**
+     * 💡 Mutator: Set individual custom field
+     */
+    public function setCustomField($key, $value)
+    {
+        $custom = $this->custom_fields ?? [];
+        $custom[$key] = $value;
+        $this->custom_fields = $custom;
+    }
+
+
+    // app/Models/Client.php
+
+    public function contacts()
+    {
+        return $this->hasMany(\App\Models\ClientContact::class);
     }
 }
