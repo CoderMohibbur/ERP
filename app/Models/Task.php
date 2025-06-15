@@ -10,10 +10,6 @@ class Task extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'project_id',
-        'assigned_to',
-        'parent_task_id',
-        'dependency_task_id',
         'title',
         'priority',
         'status',
@@ -24,17 +20,21 @@ class Task extends Model
         'estimated_hours',
         'actual_hours',
         'note',
+        'project_id',
+        'assigned_to',
+        'parent_task_id',
+        'dependency_task_id',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'due_date' => 'date',
-        'end_date' => 'date',
+        'start_date'      => 'date',
+        'due_date'        => 'date',
+        'end_date'        => 'date',
         'estimated_hours' => 'decimal:2',
-        'actual_hours' => 'decimal:2',
-        'progress' => 'integer',
+        'actual_hours'    => 'decimal:2',
+        'progress'        => 'integer',
     ];
 
     // 🔗 Relationships
@@ -49,6 +49,16 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
     public function parentTask()
     {
         return $this->belongsTo(Task::class, 'parent_task_id');
@@ -59,35 +69,25 @@ class Task extends Model
         return $this->belongsTo(Task::class, 'dependency_task_id');
     }
 
-    public function createdBy()
+    public function subTasks()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(Task::class, 'parent_task_id');
     }
 
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    // 🔍 Scopes
-
-    public function scopeDueToday($query)
-    {
-        return $query->whereDate('due_date', now()->toDateString());
-    }
-
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
-
-    public function scopeAssignedTo($query, $userId)
-    {
-        return $query->where('assigned_to', $userId);
-    }
+    // ✅ Scopes
 
     public function scopeInProgress($query)
     {
         return $query->where('status', 'in_progress');
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeHighPriority($query)
+    {
+        return $query->where('priority', 'high');
     }
 }

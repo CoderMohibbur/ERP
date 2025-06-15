@@ -2,111 +2,121 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Invoice;
+use App\Models\ItemCategory;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class InvoiceItemController extends Controller
 {
     /**
-     * Display a listing of the invoice items.
+     * Show all invoice items.
      */
-    public function index()
+    public function index(): View
     {
-        $invoiceItems = InvoiceItem::with('invoice')->latest()->paginate(15);
-        return view('invoice-items.index', compact('invoiceItems'));
+        $items = InvoiceItem::with(['invoice', 'category'])
+            ->latest()
+            ->paginate(15);
+
+        return view('invoice-items.index', compact('items'));
     }
 
     /**
-     * Show the form for creating a new invoice item.
+     * Show form to create one or more invoice items.
      */
-    public function create()
+    public function create(): View
     {
         $invoices = Invoice::pluck('invoice_number', 'id');
-        return view('invoice-items.create', compact('invoices'));
+        $categories = ItemCategory::pluck('name', 'id');
+
+        return view('invoice-items.create', compact('invoices', 'categories'));
     }
 
     /**
-     * Store a newly created invoice item in storage.
+     * Store multiple invoice items at once.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'invoice_id' => 'required|exists:invoices,id',
-            'items' => 'required|array|min:1',
-
-            'items.*.item_name'   => 'required|string|max:255',
-            'items.*.item_code'   => 'nullable|string|max:50',
-            'items.*.description' => 'nullable|string',
-            'items.*.quantity'    => 'required|integer|min:1',
-            'items.*.unit_price'  => 'required|numeric|min:0',
-            'items.*.tax_percent' => 'nullable|numeric|min:0|max:100',
+        $validated = $request->validate([
+            'invoice_id'               => 'required|exists:invoices,id',
+            'items.*.item_name'        => 'required|string|max:255',
+            'items.*.item_code'        => 'nullable|string|max:100',
+            'items.*.description'      => 'nullable|string',
+            'items.*.quantity'         => 'required|integer|min:1',
+            'items.*.unit'             => 'required|string|max:20',
+            'items.*.item_category_id' => 'nullable|exists:item_categories,id',
+            'items.*.unit_price'       => 'required|numeric|min:0',
+            'items.*.tax_percent'      => 'nullable|numeric|min:0|max:100',
+            'items.*.total'            => 'required|numeric|min:0',
         ]);
 
         foreach ($request->items as $item) {
-            $total = $item['quantity'] * $item['unit_price'];
-
-            if (!empty($item['tax_percent'])) {
-                $total += ($total * $item['tax_percent']) / 100;
-            }
-
             InvoiceItem::create([
-                'invoice_id'   => $request->invoice_id,
-                'item_code'    => $item['item_code'] ?? null,
-                'item_name'    => $item['item_name'],
-                'description'  => $item['description'] ?? null,
-                'quantity'     => $item['quantity'],
-                'unit_price'   => $item['unit_price'],
-                'tax_percent'  => $item['tax_percent'] ?? 0,
-                'total'        => $total,
+                'invoice_id'        => $request->invoice_id,
+                'item_name'         => $item['item_name'],
+                'item_code'         => $item['item_code'] ?? null,
+                'description'       => $item['description'] ?? null,
+                'quantity'          => $item['quantity'],
+                'unit'              => $item['unit'],
+                'item_category_id'  => $item['item_category_id'] ?? null,
+                'unit_price'        => $item['unit_price'],
+                'tax_percent'       => $item['tax_percent'] ?? null,
+                'total'             => $item['total'],
+                'created_by'        => auth()->id(),
             ]);
         }
 
-        return redirect()->route('invoice-items.index')->with('success', 'Invoice items added successfully.');
+        return redirect()->route('invoice-items.index')
+            ->with('success', 'All invoice items created successfully.');
     }
 
-
     /**
-     * Show the form for editing the specified invoice item.
+     * Show form to edit a single invoice item.
      */
-    public function edit(InvoiceItem $invoiceItem)
+    public function edit(InvoiceItem $invoiceItem): View
     {
         $invoices = Invoice::pluck('invoice_number', 'id');
-        return view('invoice-items.edit', compact('invoiceItem', 'invoices'));
+        $categories = ItemCategory::pluck('name', 'id');
+
+        return view('invoice-items.edit', compact('invoiceItem', 'invoices', 'categories'));
     }
 
     /**
-     * Update the specified invoice item in storage.
+     * Update a single invoice item.
      */
-    public function update(Request $request, InvoiceItem $invoiceItem)
+    public function update(Request $request, InvoiceItem $invoiceItem): RedirectResponse
     {
         $validated = $request->validate([
-            'invoice_id'   => 'required|exists:invoices,id',
-            'item_code'    => 'nullable|string|max:50',
-            'item_name'    => 'required|string|max:255',
-            'description'  => 'nullable|string',
-            'quantity'     => 'required|integer|min:1',
-            'unit_price'   => 'required|numeric|min:0',
-            'tax_percent'  => 'nullable|numeric|min:0|max:100',
+            'invoice_id'       => 'required|exists:invoices,id',
+            'item_code'        => 'nullable|string|max:100',
+            'item_name'        => 'required|string|max:255',
+            'description'      => 'nullable|string',
+            'quantity'         => 'required|integer|min:1',
+            'unit'             => 'required|string|max:20',
+            'item_category_id' => 'nullable|exists:item_categories,id',
+            'unit_price'       => 'required|numeric|min:0',
+            'tax_percent'      => 'nullable|numeric|min:0|max:100',
+            'total'            => 'required|numeric|min:0',
         ]);
 
-        $validated['total'] = $validated['quantity'] * $validated['unit_price'];
-
-        if ($validated['tax_percent'] ?? false) {
-            $validated['total'] += ($validated['total'] * $validated['tax_percent']) / 100;
-        }
+        $validated['updated_by'] = auth()->id();
 
         $invoiceItem->update($validated);
 
-        return redirect()->route('invoice-items.index')->with('success', 'Invoice item updated successfully.');
+        return redirect()->route('invoice-items.index')
+            ->with('success', 'Invoice item updated successfully.');
     }
 
     /**
-     * Remove the specified invoice item from storage.
+     * Soft delete an invoice item.
      */
-    public function destroy(InvoiceItem $invoiceItem)
+    public function destroy(InvoiceItem $invoiceItem): RedirectResponse
     {
         $invoiceItem->delete();
-        return redirect()->route('invoice-items.index')->with('success', 'Invoice item deleted.');
+
+        return redirect()->route('invoice-items.index')
+            ->with('success', 'Invoice item deleted successfully.');
     }
 }

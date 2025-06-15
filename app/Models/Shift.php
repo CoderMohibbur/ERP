@@ -9,9 +9,6 @@ class Shift extends Model
 {
     use SoftDeletes;
 
-    /**
-     * 🔐 Fillable attributes for mass assignment
-     */
     protected $fillable = [
         'name',
         'slug',
@@ -28,83 +25,49 @@ class Shift extends Model
         'updated_by',
     ];
 
-    /**
-     * 🧠 Attribute casting
-     */
     protected $casts = [
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
+        'start_time'       => 'datetime:H:i',
+        'end_time'         => 'datetime:H:i',
         'crosses_midnight' => 'boolean',
-        'is_active' => 'boolean',
-        'week_days' => 'array',
+        'week_days'        => 'array',
+        'is_active'        => 'boolean',
+        'created_by'       => 'integer',
+        'updated_by'       => 'integer',
     ];
 
-    /**
-     * 🔗 Relationship: created by user
-     */
-    public function createdBy()
+    // 🔗 Relationships
+
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * 🔗 Relationship: updated by user
-     */
-    public function updatedBy()
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /**
-     * 🔍 Scope: Only active shifts
-     */
+    // 🧠 Scopes
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * 🔍 Scope: Filter by type
-     */
-    public function scopeType($query, string $type)
+    public function scopeOfType($query, string $type)
     {
         return $query->where('type', $type);
     }
 
-    /**
-     * 🔍 Scope: Filter by day (for roster planning)
-     */
-    public function scopeForDay($query, string $day)
+    // 💡 Accessors
+
+    public function getTimeRangeAttribute(): string
     {
-        return $query->whereJsonContains('week_days', $day);
+        return $this->start_time . ' - ' . $this->end_time . ($this->crosses_midnight ? ' (+1d)' : '');
     }
 
-    /**
-     * 🎨 Accessor: Human-readable time range
-     */
-    public function getTimeRangeAttribute()
+    public function getFormattedNameAttribute(): string
     {
-        return $this->start_time . ' - ' . $this->end_time . ($this->crosses_midnight ? ' (Overnight)' : '');
-    }
-
-    public function employees()
-    {
-        return $this->belongsToMany(Employee::class, 'employee_shifts')->withTimestamps();
-    }
-
-
-    public function scopeBySlug($query, string $slug)
-    {
-        return $query->where('slug', $slug);
-    }
-
-
-    protected static function booted()
-    {
-        static::saving(function ($shift) {
-            if (empty($shift->slug) && !empty($shift->name)) {
-                $shift->slug = \Str::slug($shift->name);
-            }
-        });
+        return ucfirst(str_replace('-', ' ', $this->name));
     }
 }

@@ -93,4 +93,9 @@ class Client extends Model
     {
         return $this->hasMany(\App\Models\ClientContact::class);
     }
+
+    public function notes()
+    {
+        return $this->hasMany(ClientNote::class);
+    }
 }

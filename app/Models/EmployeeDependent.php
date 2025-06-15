@@ -23,15 +23,17 @@ class EmployeeDependent extends Model
     ];
 
     /**
-     * 🧠 Attribute casting
+     * 🧠 Cast attributes to proper types
      */
     protected $casts = [
-        'dob' => 'date',
+        'dob'                  => 'date',
         'is_emergency_contact' => 'boolean',
     ];
 
+    // 🔗 Relationships
+
     /**
-     * 🔗 Relationship: Parent employee
+     * Employee to whom this dependent belongs
      */
     public function employee()
     {
@@ -39,34 +41,36 @@ class EmployeeDependent extends Model
     }
 
     /**
-     * 🔗 Relationship: created by user
+     * User who created the record
      */
-    public function createdBy()
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
-     * 🔗 Relationship: updated by user
+     * User who last updated the record
      */
-    public function updatedBy()
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    // 🎯 Accessors (Optional)
+
     /**
-     * 🔍 Scope: Emergency contacts only
+     * Get formatted relation label (for UI display)
      */
-    public function scopeEmergency($query)
+    public function getRelationLabelAttribute(): string
     {
-        return $query->where('is_emergency_contact', true);
+        return ucfirst($this->relation);
     }
 
     /**
-     * 🔍 Scope: Filter by relation
+     * Show emergency badge (for UI)
      */
-    public function scopeRelationType($query, $relation)
+    public function getIsEmergencyBadgeAttribute(): string
     {
-        return $query->where('relation', $relation);
+        return $this->is_emergency_contact ? '✅ Yes' : '—';
     }
 }

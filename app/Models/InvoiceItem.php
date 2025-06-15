@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InvoiceItem extends Model
 {
@@ -17,38 +16,55 @@ class InvoiceItem extends Model
         'description',
         'quantity',
         'unit',
+        'item_category_id',
         'unit_price',
         'tax_percent',
         'total',
-        'item_category_id',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'unit_price' => 'decimal:2',
-        'tax_percent' => 'decimal:2',
-        'total' => 'decimal:2',
+        'quantity'       => 'integer',
+        'unit_price'     => 'decimal:2',
+        'tax_percent'    => 'decimal:2',
+        'total'          => 'decimal:2',
+        'created_by'     => 'integer',
+        'updated_by'     => 'integer',
     ];
 
     // 🔗 Relationships
-    public function invoice(): BelongsTo
+
+    public function invoice()
     {
         return $this->belongsTo(Invoice::class);
     }
 
-    public function category(): BelongsTo
+    public function category()
     {
         return $this->belongsTo(ItemCategory::class, 'item_category_id');
     }
 
-    public function creator(): BelongsTo
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater(): BelongsTo
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // 📐 Accessors & Mutators (if needed)
+
+    public function getFormattedTotalAttribute()
+    {
+        return number_format($this->total, 2);
+    }
+
+    // 🧠 Scopes (example)
+    public function scopeForInvoice($query, $invoiceId)
+    {
+        return $query->where('invoice_id', $invoiceId);
     }
 }

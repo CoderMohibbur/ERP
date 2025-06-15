@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -11,9 +9,6 @@ class Skill extends Model
 {
     use SoftDeletes;
 
-    /**
-     * 🔐 Mass assignable attributes
-     */
     protected $fillable = [
         'name',
         'slug',
@@ -24,71 +19,49 @@ class Skill extends Model
         'updated_by',
     ];
 
-    /**
-     * 🧠 Cast types
-     */
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'   => 'boolean',
+        'created_by'  => 'integer',
+        'updated_by'  => 'integer',
     ];
 
-    /**
-     * 🔗 Belongs to the user who created this skill
-     */
-    public function createdBy()
+    // 🔗 Relationships
+
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * 🔗 Belongs to the user who last updated this skill
-     */
-    public function updatedBy()
+    public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /**
-     * 🔗 Many-to-Many: Skill assigned to multiple employees
-     */
-    public function employees()
-    {
-        return $this->belongsToMany(Employee::class, 'employee_skills')
-                    ->withTimestamps();
-    }
+    // 🧠 Scopes
 
-    /**
-     * 🔍 Scope: Only active skills
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * 🔍 Scope: Filter by category (e.g., 'Technical')
-     */
-    public function scopeCategory($query, string $category)
+    public function scopeByCategory($query, $category)
     {
         return $query->where('category', $category);
     }
 
-    /**
-     * 🔍 Scope: Find by slug
-     */
-    public function scopeSlug($query, string $slug)
+    // 🔤 Accessors
+
+    public function getFormattedNameAttribute(): string
     {
-        return $query->where('slug', $slug);
+        return ucwords(str_replace('-', ' ', $this->name));
     }
 
-    /**
-     * 🔁 Auto lowercase slug (if you want to keep it synced)
-     */
-    public static function booted()
-    {
-        static::saving(function ($skill) {
-            if (!empty($skill->name) && empty($skill->slug)) {
-                $skill->slug = Str::slug($skill->name);
-            }
-        });
-    }
+    // 🧾 Auto-slug if needed (optional future feature)
+    // protected static function boot()
+    // {
+    //     parent::boot();
+    //     static::creating(function ($model) {
+    //         $model->slug = Str::slug($model->name);
+    //     });
+    // }
 }

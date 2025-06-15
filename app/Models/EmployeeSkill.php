@@ -9,9 +9,6 @@ class EmployeeSkill extends Model
 {
     use SoftDeletes;
 
-    /**
-     * 🔐 Mass assignable attributes
-     */
     protected $fillable = [
         'employee_id',
         'skill_id',
@@ -20,61 +17,45 @@ class EmployeeSkill extends Model
         'assigned_by',
     ];
 
-    /**
-     * 🧠 Type casting
-     */
     protected $casts = [
         'proficiency_level' => 'integer',
+        'assigned_by'       => 'integer',
     ];
 
-    /**
-     * 🔗 Relationship: Belongs to Employee
-     */
+    // 🔗 Relationships
+
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    /**
-     * 🔗 Relationship: Belongs to Skill
-     */
     public function skill()
     {
         return $this->belongsTo(Skill::class);
     }
 
-    /**
-     * 🔗 Relationship: Assigned by User
-     */
-    public function assignedBy()
+    public function assigner()
     {
         return $this->belongsTo(User::class, 'assigned_by');
     }
 
-    /**
-     * 🔍 Scope: Filter by proficiency level
-     */
-    public function scopeProficient($query, int $level)
+    // 🔍 Scope
+
+    public function scopeWithProficiency($query, $level)
     {
         return $query->where('proficiency_level', '>=', $level);
     }
 
-    /**
-     * 🔍 Scope: Filter by specific skill
-     */
-    public function scopeWithSkill($query, $skillId)
-    {
-        return $query->where('skill_id', $skillId);
-    }
+    // 💡 Accessor (Optional)
 
-
-    public function getProficiencyLabelAttribute(): string
+    public function getProficiencyDescriptionAttribute(): string
     {
-        return match (true) {
-            $this->proficiency_level >= 9 => 'Expert',
-            $this->proficiency_level >= 6 => 'Advanced',
-            $this->proficiency_level >= 3 => 'Intermediate',
-            default => 'Beginner',
+        return match ($this->proficiency_level) {
+            1, 2 => 'Beginner',
+            3, 4, 5 => 'Intermediate',
+            6, 7, 8 => 'Advanced',
+            9, 10 => 'Expert',
+            default => 'Not Set',
         };
     }
 }

@@ -9,9 +9,6 @@ class EmployeeDocument extends Model
 {
     use SoftDeletes;
 
-    /**
-     * 🔐 Mass assignable attributes
-     */
     protected $fillable = [
         'employee_id',
         'type',
@@ -28,60 +25,50 @@ class EmployeeDocument extends Model
         'verified_by',
     ];
 
-    /**
-     * 🧠 Type casting
-     */
     protected $casts = [
-        'is_verified' => 'boolean',
-        'expires_at' => 'date',
+        'file_size'    => 'integer',
+        'is_verified'  => 'boolean',
+        'expires_at'   => 'date',
     ];
 
-    /**
-     * 🔗 Relationship: Employee
-     */
+    // 🔗 Relationships
+
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    /**
-     * 🔗 Relationship: Uploaded by user
-     */
-    public function uploadedBy()
+    public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    /**
-     * 🔗 Relationship: Verified by user
-     */
-    public function verifiedBy()
+    public function verifier()
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    /**
-     * 🔍 Scope: Verified documents only
-     */
+    // 🔎 Scope
+
     public function scopeVerified($query)
     {
         return $query->where('is_verified', true);
     }
 
-    /**
-     * 🔍 Scope: Expired documents
-     */
-    public function scopeExpired($query)
-    {
-        return $query->whereNotNull('expires_at')
-                     ->where('expires_at', '<', now());
-    }
-
-    /**
-     * 🔍 Scope: Filter by visibility level
-     */
-    public function scopeVisibleTo($query, string $role)
+    public function scopeVisibleTo($query, $role = 'employee')
     {
         return $query->where('visibility', $role);
+    }
+
+    // 📁 Accessors
+
+    public function getFileNameAttribute()
+    {
+        return basename($this->file_path);
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at && $this->expires_at->isPast();
     }
 }

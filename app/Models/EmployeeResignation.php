@@ -10,7 +10,7 @@ class EmployeeResignation extends Model
     use SoftDeletes;
 
     /**
-     * 🔐 Fillable attributes
+     * The attributes that are mass assignable.
      */
     protected $fillable = [
         'employee_id',
@@ -26,72 +26,67 @@ class EmployeeResignation extends Model
     ];
 
     /**
-     * 🧠 Attribute casting
+     * The attributes that should be cast to native types.
      */
     protected $casts = [
         'resignation_date' => 'date',
-        'effective_date' => 'date',
-        'approved_at' => 'datetime',
+        'effective_date'   => 'date',
+        'approved_at'      => 'datetime',
     ];
 
     /**
-     * 🔗 Relationship: Employee
+     * 🔗 Relationships
      */
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    /**
-     * 🔗 Relationship: Approved by user
-     */
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-    /**
-     * 🔗 Relationship: Created by user
-     */
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * 🔗 Relationship: Updated by user
-     */
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
-     * 🔍 Scope: Approved resignations
+     * 🔍 Query Scopes
      */
-    public function scopeApproved($query)
+    public function scopeStatus($query, string $status)
     {
-        return $query->where('status', 'approved');
+        return $query->where('status', $status);
     }
 
-    /**
-     * 🔍 Scope: Pending resignations
-     */
+    public function scopeEffectiveAfter($query, $date)
+    {
+        return $query->where('effective_date', '>=', $date);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved')->whereNotNull('approved_at');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    /**
-     * 🔍 Scope: Filter by month/year
-     */
-    public function scopeInMonth($query, $month)
+    public function scopeByEmployee($query, $employeeId)
     {
-        return $query->whereMonth('resignation_date', $month);
+        return $query->where('employee_id', $employeeId);
     }
 
-    public function scopeInYear($query, $year)
-    {
-        return $query->whereYear('resignation_date', $year);
-    }
+    /**
+     * 🧠 Index suggestion (should match migration)
+     * DB Indexes: employee_id, status, resignation_date, effective_date
+     */
 }

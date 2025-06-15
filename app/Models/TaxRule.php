@@ -9,6 +9,9 @@ class TaxRule extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Mass assignable attributes.
+     */
     protected $fillable = [
         'name',
         'rate_percent',
@@ -23,43 +26,65 @@ class TaxRule extends Model
         'updated_by',
     ];
 
+    /**
+     * Casts for automatic type conversion.
+     */
     protected $casts = [
         'rate_percent'    => 'float',
         'is_active'       => 'boolean',
         'applicable_from' => 'date',
         'applicable_to'   => 'date',
-        'created_by'      => 'integer',
-        'updated_by'      => 'integer',
     ];
 
-    // 🔍 Optional scope helper
-    public function isGlobal(): bool
+    /**
+     * 🔍 Scopes for reusable query filters.
+     */
+
+    public function scopeActive($query)
     {
-        return $this->scope === 'global';
+        return $query->where('is_active', true);
     }
 
-    // 🧑 Created By
+    public function scopeGlobal($query)
+    {
+        return $query->where('scope', 'global');
+    }
+
+    public function scopeEffectiveToday($query)
+    {
+        $today = now()->toDateString();
+
+        return $query->where(function ($q) use ($today) {
+            $q->whereNull('applicable_from')
+              ->orWhere('applicable_from', '<=', $today);
+        })->where(function ($q) use ($today) {
+            $q->whereNull('applicable_to')
+              ->orWhere('applicable_to', '>=', $today);
+        });
+    }
+
+    public function scopeForRegion($query, $country = null, $region = null)
+    {
+        return $query->where(function ($q) use ($country, $region) {
+            if ($country) {
+                $q->where('country_code', $country);
+            }
+            if ($region) {
+                $q->where('region', $region);
+            }
+        });
+    }
+
+    /**
+     * 🧠 Relationships (future ready, if using user tracking).
+     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // 🧑 Updated By
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
-    }
-
-    // InvoiceItem.php
-    public function taxRule()
-    {
-        return $this->belongsTo(TaxRule::class);
-    }
-
-
-    // TaxRule.php
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
     }
 }

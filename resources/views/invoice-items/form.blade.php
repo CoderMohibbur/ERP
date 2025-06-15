@@ -1,59 +1,19 @@
-<div id="item-list">
-    <div class="item-row grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
-        <input type="text" name="items[0][item_name]" placeholder="Item Name"
-               class="col-span-1 md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+<div class="grid grid-cols-6 gap-4 mb-4 item-group">
+       <input type="text" name="items[{{ $index }}][item_name]" placeholder="Item Name"
+                 class="col-span-2 border px-3 py-2 rounded bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100" required>
 
-        <input type="number" name="items[0][quantity]" placeholder="Qty" min="1"
-               class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+       <input type="text" name="items[{{ $index }}][item_code]" placeholder="Item Code (optional)"
+                 class="border px-3 py-2 rounded bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100">
 
-        <input type="number" name="items[0][unit_price]" placeholder="Unit Price" step="0.01"
-               class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+       <input type="number" name="items[{{ $index }}][quantity]" placeholder="Qty" min="1"
+                 class="border px-3 py-2 rounded bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100" required>
 
-        <input type="number" name="items[0][tax_percent]" placeholder="Tax %" step="0.01"
-               class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+       <input type="text" name="items[{{ $index }}][unit]" placeholder="Unit" value="pcs"
+                 class="border px-3 py-2 rounded bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100" required>
 
-        <input type="text" name="items[0][description]" placeholder="Description"
-               class="col-span-1 md:col-span-1 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+       <input type="number" step="0.01" name="items[{{ $index }}][unit_price]" placeholder="Unit Price"
+                 class="border px-3 py-2 rounded bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100" required>
 
-        <button type="button" class="remove-item px-3 py-2 bg-red-600 text-white rounded">×</button>
-    </div>
+       <input type="number" step="0.01" name="items[{{ $index }}][total]" placeholder="Total"
+                 class="border px-3 py-2 rounded bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100" required>
 </div>
-
-<div class="mb-4">
-    <button type="button" id="add-item"
-            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        + Add Item
-    </button>
-</div>
-
-@push('scripts')
-<script>
-    let index = 1;
-    document.getElementById('add-item').addEventListener('click', function () {
-        const itemList = document.getElementById('item-list');
-        const newRow = document.createElement('div');
-        newRow.classList.add('item-row', 'grid', 'grid-cols-1', 'md:grid-cols-6', 'gap-4', 'mb-4');
-        newRow.innerHTML = `
-            <input type="text" name="items[${index}][item_name]" placeholder="Item Name"
-                   class="col-span-1 md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-            <input type="number" name="items[${index}][quantity]" placeholder="Qty" min="1"
-                   class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-            <input type="number" name="items[${index}][unit_price]" placeholder="Unit Price" step="0.01"
-                   class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-            <input type="number" name="items[${index}][tax_percent]" placeholder="Tax %" step="0.01"
-                   class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-            <input type="text" name="items[${index}][description]" placeholder="Description"
-                   class="col-span-1 md:col-span-1 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-            <button type="button" class="remove-item px-3 py-2 bg-red-600 text-white rounded">×</button>
-        `;
-        itemList.appendChild(newRow);
-        index++;
-    });
-
-    document.addEventListener('click', function (e) {
-        if (e.target && e.target.classList.contains('remove-item')) {
-            e.target.closest('.item-row').remove();
-        }
-    });
-</script>
-@endpush
