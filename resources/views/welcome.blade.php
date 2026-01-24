@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Laravel</title>
+    <title>ERP</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -22,7 +22,7 @@
             <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
                 <a href="/" class="flex items-center">
                     <img src="https://flowbite.com/docs/images/logo.svg" class="mr-3 h-6 sm:h-9" alt="Flowbite Logo" />
-                    <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Flowbite</span>
+                    <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">ERP</span>
                 </a>
                 <div class="flex items-center lg:order-2">
                     <a href="/login"

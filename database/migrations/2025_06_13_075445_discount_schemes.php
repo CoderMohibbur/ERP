@@ -10,14 +10,15 @@ return new class extends Migration {
         Schema::create('discount_schemes', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('discount_type_id')->nullable();
-            $table->foreign('discount_type_id')->references('id')->on('discount_types')->nullOnDelete();
-
+            $table->foreignId('discount_type_id')
+                ->nullable()
+                ->constrained('discount_types')
+                ->nullOnDelete();
 
             // 📋 Discount Info
             $table->string('name');                        // e.g., Eid Offer, 15% Off
             $table->enum('type', ['flat', 'percentage']);  // Flat amount or percentage
-            $table->decimal('value', 10, 2);               // 100.00 or 15.00%
+            $table->decimal('value', 10, 2);               // 100.00 or 15.00
 
             // 🧩 Scope
             $table->enum('applies_to', ['invoice', 'item', 'category', 'client'])->default('item');
@@ -35,13 +36,16 @@ return new class extends Migration {
             // 🔐 Audit & Control
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamps();
+
+            // preference: softDeletes আগে, তারপর timestamps
             $table->softDeletes();
+            $table->timestamps();
 
             // 🔍 Indexing
             $table->index(['type', 'applies_to', 'reference_id']);
             $table->index(['valid_from', 'valid_to']);
             $table->index(['is_active']);
+            $table->index(['discount_type_id']); // FK column indexing (helpful)
         });
     }
 

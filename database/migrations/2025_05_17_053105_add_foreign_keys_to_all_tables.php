@@ -7,16 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-
-
         // Users
         Schema::table('users', function (Blueprint $table) {
             $table->foreign('role_id')->references('id')->on('roles')->nullOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
         });
-
-
 
         // Employees
         Schema::table('employees', function (Blueprint $table) {
@@ -25,19 +21,17 @@ return new class extends Migration {
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
         });
 
-        // 🕒 Attendances table foreign keys
+        // Attendances
         Schema::table('attendances', function (Blueprint $table) {
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
             $table->foreign('verified_by')->references('id')->on('users')->nullOnDelete();
         });
 
-
-        // 👥 Clients table foreign keys
+        // Clients
         Schema::table('clients', function (Blueprint $table) {
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
         });
-
 
         Schema::table('client_contacts', function (Blueprint $table) {
             $table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
@@ -48,15 +42,14 @@ return new class extends Migration {
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
         });
 
-        // 📁 Projects table foreign keys
+        // Projects
         Schema::table('projects', function (Blueprint $table) {
             $table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
         });
 
-
-        //  Tasks table foreign keys
+        // Tasks
         Schema::table('tasks', function (Blueprint $table) {
             $table->foreign('project_id')->references('id')->on('projects')->cascadeOnDelete();
             $table->foreign('assigned_to')->references('id')->on('users')->nullOnDelete();
@@ -66,7 +59,7 @@ return new class extends Migration {
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
         });
 
-
+        // Pivot tables
         Schema::table('project_employee', function (Blueprint $table) {
             $table->foreign('project_id')->references('id')->on('projects')->cascadeOnDelete();
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
@@ -77,6 +70,7 @@ return new class extends Migration {
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
         });
 
+        // Project files/notes
         Schema::table('project_files', function (Blueprint $table) {
             $table->foreign('project_id')->references('id')->on('projects')->cascadeOnDelete();
         });
@@ -86,8 +80,7 @@ return new class extends Migration {
             $table->foreign('created_by')->references('id')->on('users')->nullOnDelete();
         });
 
-        // ✅ Invoices (Fixed)
-        // 📦 Invoices table foreign keys
+        // Invoices
         Schema::table('invoices', function (Blueprint $table) {
             $table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
             $table->foreign('project_id')->references('id')->on('projects')->nullOnDelete();
@@ -98,10 +91,7 @@ return new class extends Migration {
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
         });
 
-
-
-
-        // 📦 invoice_items table foreign keys
+        // Invoice items
         Schema::table('invoice_items', function (Blueprint $table) {
             $table->foreign('invoice_id')->references('id')->on('invoices')->cascadeOnDelete();
             $table->foreign('item_category_id')->references('id')->on('item_categories')->nullOnDelete();
@@ -109,7 +99,7 @@ return new class extends Migration {
             $table->foreign('updated_by')->references('id')->on('users')->nullOnDelete();
         });
 
-        // 💳 Payments foreign keys
+        // Payments
         Schema::table('payments', function (Blueprint $table) {
             $table->foreign('invoice_id')->references('id')->on('invoices')->cascadeOnDelete();
             $table->foreign('payment_method_id')->references('id')->on('payment_methods')->restrictOnDelete();
@@ -121,15 +111,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        // Drop foreign keys in reverse order
+        // ✅ Drop in safe order (dependents আগে)
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['role_id']);
-            $table->dropForeign(['created_by']);
-            $table->dropForeign(['updated_by']);
-        });
-
-
+        // Payments
         Schema::table('payments', function (Blueprint $table) {
             $table->dropForeign(['invoice_id']);
             $table->dropForeign(['payment_method_id']);
@@ -138,10 +122,15 @@ return new class extends Migration {
             $table->dropForeign(['updated_by']);
         });
 
+        // Invoice items (✅ একবারই drop হবে)
         Schema::table('invoice_items', function (Blueprint $table) {
             $table->dropForeign(['invoice_id']);
+            $table->dropForeign(['item_category_id']);
+            $table->dropForeign(['created_by']);
+            $table->dropForeign(['updated_by']);
         });
 
+        // Invoices
         Schema::table('invoices', function (Blueprint $table) {
             $table->dropForeign(['client_id']);
             $table->dropForeign(['project_id']);
@@ -152,6 +141,7 @@ return new class extends Migration {
             $table->dropForeign(['updated_by']);
         });
 
+        // Project notes/files
         Schema::table('project_notes', function (Blueprint $table) {
             $table->dropForeign(['project_id']);
             $table->dropForeign(['created_by']);
@@ -161,6 +151,7 @@ return new class extends Migration {
             $table->dropForeign(['project_id']);
         });
 
+        // Pivot tables
         Schema::table('task_employee', function (Blueprint $table) {
             $table->dropForeign(['task_id']);
             $table->dropForeign(['employee_id']);
@@ -171,6 +162,7 @@ return new class extends Migration {
             $table->dropForeign(['employee_id']);
         });
 
+        // Tasks
         Schema::table('tasks', function (Blueprint $table) {
             $table->dropForeign(['project_id']);
             $table->dropForeign(['assigned_to']);
@@ -180,14 +172,14 @@ return new class extends Migration {
             $table->dropForeign(['updated_by']);
         });
 
-
+        // Projects
         Schema::table('projects', function (Blueprint $table) {
             $table->dropForeign(['client_id']);
             $table->dropForeign(['created_by']);
             $table->dropForeign(['updated_by']);
         });
 
-
+        // Client notes/contacts/clients
         Schema::table('client_notes', function (Blueprint $table) {
             $table->dropForeign(['client_id']);
             $table->dropForeign(['created_by']);
@@ -202,22 +194,22 @@ return new class extends Migration {
             $table->dropForeign(['updated_by']);
         });
 
-
+        // Attendances
         Schema::table('attendances', function (Blueprint $table) {
             $table->dropForeign(['employee_id']);
             $table->dropForeign(['verified_by']);
         });
 
-
+        // Employees
         Schema::table('employees', function (Blueprint $table) {
             $table->dropForeign(['department_id']);
             $table->dropForeign(['designation_id']);
             $table->dropForeign(['created_by']);
         });
 
-        Schema::table('invoice_items', function (Blueprint $table) {
-            $table->dropForeign(['invoice_id']);
-            $table->dropForeign(['item_category_id']);
+        // Users (সবশেষে)
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['role_id']);
             $table->dropForeign(['created_by']);
             $table->dropForeign(['updated_by']);
         });
