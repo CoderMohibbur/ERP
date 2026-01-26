@@ -37,6 +37,8 @@ class DatabaseSeeder extends Seeder
         PaymentMethodSeeder::class,
         PaymentSeeder::class,
         RolesAndPermissionsSeeder::class,
+        ServiceTypeSeeder::class,
+        TaskTemplateSeeder::class,
     ]);
 
     }
