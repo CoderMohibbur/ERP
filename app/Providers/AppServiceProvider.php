@@ -3,6 +3,12 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\Deal;
+use App\Models\Payment;
+use App\Models\TimeLog;
+use App\Observers\DealObserver;
+use App\Observers\PaymentObserver;
+use App\Observers\TimeLogObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Deal::observe(DealObserver::class);
+        Payment::observe(PaymentObserver::class);
+        TimeLog::observe(TimeLogObserver::class);
     }
 }

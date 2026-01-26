@@ -13,10 +13,17 @@ return new class extends Migration {
             $table->string('title', 190);
 
             $table->foreignId('lead_id')->nullable()
-                ->constrained('leads')->nullOnDelete();
+                ->constrained('leads')
+                ->nullOnDelete();
 
             $table->foreignId('client_id')->nullable()
-                ->constrained('clients')->nullOnDelete();
+                ->constrained('clients')
+                ->nullOnDelete();
+
+            // linked project (usually after deal won)
+            $table->foreignId('project_id')->nullable()
+                ->constrained('projects')
+                ->nullOnDelete();
 
             $table->string('stage', 20)->default('new')->index(); // DealStage
 
@@ -31,13 +38,9 @@ return new class extends Migration {
             $table->dateTime('lost_at')->nullable()->index();
             $table->string('lost_reason', 255)->nullable();
 
-            $table->foreignId('owner_id')->constrained('users'); // indexed by default
-
-            $table->foreignId('created_by')->nullable()
-                ->constrained('users')->nullOnDelete();
-
-            $table->foreignId('updated_by')->nullable()
-                ->constrained('users')->nullOnDelete();
+            $table->foreignId('owner_id')->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->softDeletes();
             $table->timestamps();
