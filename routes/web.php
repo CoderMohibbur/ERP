@@ -37,7 +37,8 @@ use App\Http\Controllers\{
     ExpenseController,
     OwnerDashboardController,
     TimeLogController,
-    ServiceRenewalController,   
+    ServiceRenewalController,
+    ActivityController, 
 };
 
 
@@ -128,3 +129,5 @@ Route::post('tasks/{task}/timer/stop',  [TimeLogController::class, 'stop'])->nam
 
 Route::post('services/{service}/renewals/generate-invoice', [ServiceRenewalController::class, 'generateInvoice'])
     ->name('services.renewals.invoice');
+
+    Route::resource('activities', ActivityController::class)->only(['store', 'update', 'destroy']);

@@ -72,4 +72,6 @@
             </form>
         </div>
     </div>
+    @include('activities._panel', ['actionable' => $lead])
+
 </x-app-layout>

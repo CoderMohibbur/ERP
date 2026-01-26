@@ -86,4 +86,6 @@
             </form>
         </div>
     </div>
+    @include('activities._panel', ['actionable' => $deal])
+
 </x-app-layout>
