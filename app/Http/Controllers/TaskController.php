@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\TimeLog;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 class TaskController extends Controller
 {
@@ -27,6 +29,64 @@ class TaskController extends Controller
         $tasks = $query->paginate(10)->withQueryString();
 
         return view('tasks.index', compact('tasks'));
+    }
+
+    /**
+     * ✅ Task show page (Spec): Start/Stop timer + Today total
+     */
+    public function show(Task $task): View
+    {
+        // Eager load to avoid N+1 on show
+        $task->loadMissing(['project', 'assignee']);
+
+        $userId = auth()->id();
+
+        $todayStart = now()->startOfDay();
+        $todayEnd   = now()->endOfDay();
+
+        // Today logs that overlap today (cross-midnight safe)
+        $logs = TimeLog::query()
+            ->where('task_id', $task->id)
+            ->where('user_id', $userId)
+            ->where('started_at', '<=', $todayEnd)
+            ->where(function ($q) use ($todayStart) {
+                $q->whereNull('ended_at')
+                    ->orWhere('ended_at', '>=', $todayStart);
+            })
+            ->orderByDesc('started_at')
+            ->get();
+
+        // Calculate today's total seconds precisely by overlap with today's window
+        $todayTotalSeconds = 0;
+        foreach ($logs as $log) {
+            $start = Carbon::parse($log->started_at);
+            $end   = $log->ended_at ? Carbon::parse($log->ended_at) : now();
+
+            $effectiveStart = $start->greaterThan($todayStart) ? $start : $todayStart;
+            $effectiveEnd   = $end->lessThan($todayEnd) ? $end : $todayEnd;
+
+            if ($effectiveEnd->greaterThan($effectiveStart)) {
+                $todayTotalSeconds += $effectiveEnd->diffInSeconds($effectiveStart);
+            }
+        }
+
+        // Running timer for this user (any task) - for UI warning/disable start
+        $runningAny = TimeLog::query()
+            ->where('user_id', $userId)
+            ->whereNull('ended_at')
+            ->latest('started_at')
+            ->first();
+
+        $runningForThis = ($runningAny && (int) $runningAny->task_id === (int) $task->id) ? $runningAny : null;
+        $runningOther   = ($runningAny && (int) $runningAny->task_id !== (int) $task->id) ? $runningAny : null;
+
+        return view('tasks.show', [
+            'task' => $task,
+            'todayLogs' => $logs,
+            'todayTotalSeconds' => (int) $todayTotalSeconds,
+            'runningForThis' => $runningForThis,
+            'runningOther' => $runningOther,
+        ]);
     }
 
     public function create(): View

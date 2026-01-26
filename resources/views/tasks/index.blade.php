@@ -53,6 +53,10 @@
                         <td class="px-4 py-2 text-right">
                             <a href="{{ route('tasks.edit', $task->id) }}"
                                 class="text-blue-500 hover:underline">Edit</a>
+                            <a href="{{ route('tasks.show', $task->id) }}"
+                                class="text-green-600 hover:text-green-800 font-medium">
+                                Timer
+                            </a>
                             <form action="{{ route('tasks.destroy', $task->id) }}" method="POST" class="inline-block"
                                 onsubmit="return confirm('Are you sure?')">
                                 @csrf

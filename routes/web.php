@@ -39,6 +39,8 @@ use App\Http\Controllers\{
     TimeLogController,
     ServiceRenewalController,
     ActivityController, 
+    ProjectBoardController,
+    TaskStatusController
 };
 
 
@@ -131,3 +133,10 @@ Route::post('services/{service}/renewals/generate-invoice', [ServiceRenewalContr
     ->name('services.renewals.invoice');
 
     Route::resource('activities', ActivityController::class)->only(['store', 'update', 'destroy']);
+Route::get('projects/{project}/board', ProjectBoardController::class)
+    ->name('projects.board')
+    ->middleware('permission:project.view|project.*');
+
+Route::patch('tasks/{task}/status', TaskStatusController::class)
+    ->name('tasks.status')
+    ->middleware('permission:task.update|task.*');
