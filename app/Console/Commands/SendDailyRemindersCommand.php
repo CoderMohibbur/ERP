@@ -14,6 +14,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SendDailyRemindersCommand extends Command
 {
@@ -33,8 +34,9 @@ class SendDailyRemindersCommand extends Command
             $today = Carbon::today(config('app.timezone'));
 
             $owners = $this->ownerUsers();
-            $actor  = $owners->first() ?? User::query()->orderBy('id')->first();
 
+            // actor = first owner, fallback any user
+            $actor = $owners->first() ?? User::query()->orderBy('id')->first();
             if (! $actor) {
                 $this->warn('No users found. Skipping reminders safely.');
                 return self::SUCCESS;
@@ -42,9 +44,9 @@ class SendDailyRemindersCommand extends Command
 
             $dryRun = (bool) $this->option('dry-run');
 
-            $renewalCount  = $this->processRenewalReminders($today, $owners, $actor->id, $dryRun);
-            $invoiceCount  = $this->processInvoiceReminders($today, $owners, $actor->id, $dryRun);
-            $followupCount = $this->processFollowupReminders($today, $owners, $actor->id, $dryRun);
+            $renewalCount  = $this->processRenewalReminders($today, $owners, (int) $actor->id, $dryRun);
+            $invoiceCount  = $this->processInvoiceReminders($today, $owners, (int) $actor->id, $dryRun);
+            $followupCount = $this->processFollowupReminders($today, $owners, (int) $actor->id, $dryRun);
 
             $this->info("Done. Renewals={$renewalCount}, Invoices={$invoiceCount}, Followups={$followupCount}");
             return self::SUCCESS;
@@ -55,10 +57,11 @@ class SendDailyRemindersCommand extends Command
 
     private function processRenewalReminders(Carbon $today, Collection $owners, int $actorId, bool $dryRun): int
     {
-        // Spec style reminders: today+7, today+3, today
         $offsets = config('reminders.renewal_days_before', [7, 3, 0]);
 
-        $targetDates = collect($offsets)->map(fn ($d) => $today->copy()->addDays((int) $d)->toDateString())->all();
+        $targetDates = collect($offsets)
+            ->map(fn ($d) => $today->copy()->addDays((int) $d)->toDateString())
+            ->all();
 
         $services = Service::query()
             ->with('client')
@@ -66,7 +69,7 @@ class SendDailyRemindersCommand extends Command
             ->whereNotNull('next_renewal_at')
             ->whereIn(DB::raw('DATE(next_renewal_at)'), $targetDates)
             ->orderBy('next_renewal_at')
-            ->limit(config('reminders.max_per_type', 50))
+            ->limit((int) config('reminders.max_per_type', 50))
             ->get();
 
         $sent = 0;
@@ -79,7 +82,7 @@ class SendDailyRemindersCommand extends Command
                 }
 
                 $type = "renewal_due_{$daysBefore}";
-                $keyDate = Carbon::parse($remindDate, config('app.timezone'))->toDateString();
+                $keyDate = $remindDate;
 
                 if (! $this->shouldSend($type, Service::class, (int) $service->id, $keyDate)) {
                     continue;
@@ -95,15 +98,15 @@ class SendDailyRemindersCommand extends Command
 
                 if (! $dryRun) {
                     $this->createActivity([
-                        'subject'         => "[REMINDER] Renewal due ({$daysBefore}d)",
-                        'type'            => 'note',
-                        'body'            => $msg,
-                        'activity_at'     => now(),
+                        'subject'           => "[REMINDER] Renewal due ({$daysBefore}d)",
+                        'type'              => 'note',
+                        'body'              => $msg,
+                        'activity_at'       => now(),
                         'next_follow_up_at' => null,
-                        'status'          => 'open',
-                        'actor_id'        => $actorId,
-                        'actionable_type' => \App\Models\Client::class,
-                        'actionable_id'   => $clientId,
+                        'status'            => 'open',
+                        'actor_id'          => $actorId,
+                        'actionable_type'   => \App\Models\Client::class,
+                        'actionable_id'     => $clientId,
                     ]);
 
                     $this->notifyOwners($owners, new DueReminderNotification(
@@ -111,18 +114,18 @@ class SendDailyRemindersCommand extends Command
                         message: $msg,
                         url: $url,
                         meta: [
-                            'reminder_type' => $type,
-                            'service_id' => (int) $service->id,
-                            'client_id' => $clientId,
+                            'reminder_type'  => $type,
+                            'service_id'     => (int) $service->id,
+                            'client_id'      => $clientId,
                             'next_renewal_at' => $service->next_renewal_at?->format('Y-m-d'),
-                            'days_before' => (int) $daysBefore,
+                            'days_before'    => (int) $daysBefore,
                         ]
                     ));
 
                     $this->markSent($type, Service::class, (int) $service->id, $keyDate, [
-                        'client_id' => $clientId,
+                        'client_id'      => $clientId,
                         'next_renewal_at' => $service->next_renewal_at?->format('Y-m-d'),
-                        'days_before' => (int) $daysBefore,
+                        'days_before'    => (int) $daysBefore,
                     ]);
                 }
 
@@ -144,7 +147,7 @@ class SendDailyRemindersCommand extends Command
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $today->copy()->addDays($maxDaysAhead)->toDateString())
             ->orderBy('due_date')
-            ->limit(config('reminders.max_per_type', 50))
+            ->limit((int) config('reminders.max_per_type', 50))
             ->get();
 
         $sent = 0;
@@ -156,12 +159,11 @@ class SendDailyRemindersCommand extends Command
             $balance = $invoice->balance ?? max(0, (float) ($invoice->total ?? 0) - (float) ($invoice->paid_total ?? 0));
             $clientId = (int) ($invoice->client_id ?? 0);
 
-            // Overdue rule
+            // Overdue
             if ($due->lt($today)) {
                 $type = "invoice_overdue";
-                $keyDate = $today->toDateString(); // daily (so it can repeat per day)
+                $keyDate = $today->toDateString(); // daily key
 
-                // If you want less spam, change config reminders.overdue_repeat_days and skip on non-match
                 $repeatDays = (int) config('reminders.overdue_repeat_days', 1);
                 if ($repeatDays > 1) {
                     $daysSince = $due->diffInDays($today);
@@ -180,15 +182,15 @@ class SendDailyRemindersCommand extends Command
 
                 if (! $dryRun) {
                     $this->createActivity([
-                        'subject'         => "[REMINDER] Invoice overdue",
-                        'type'            => 'note',
-                        'body'            => $msg,
-                        'activity_at'     => now(),
+                        'subject'           => "[REMINDER] Invoice overdue",
+                        'type'              => 'note',
+                        'body'              => $msg,
+                        'activity_at'       => now(),
                         'next_follow_up_at' => null,
-                        'status'          => 'open',
-                        'actor_id'        => $actorId,
-                        'actionable_type' => \App\Models\Client::class,
-                        'actionable_id'   => $clientId,
+                        'status'            => 'open',
+                        'actor_id'          => $actorId,
+                        'actionable_type'   => \App\Models\Client::class,
+                        'actionable_id'     => $clientId,
                     ]);
 
                     $this->notifyOwners($owners, new DueReminderNotification(
@@ -197,17 +199,17 @@ class SendDailyRemindersCommand extends Command
                         url: $url,
                         meta: [
                             'reminder_type' => $type,
-                            'invoice_id' => (int) $invoice->id,
-                            'client_id' => $clientId,
-                            'due_date' => $due->format('Y-m-d'),
-                            'balance' => $balance,
+                            'invoice_id'    => (int) $invoice->id,
+                            'client_id'     => $clientId,
+                            'due_date'      => $due->format('Y-m-d'),
+                            'balance'       => $balance,
                         ]
                     ));
 
                     $this->markSent($type, Invoice::class, (int) $invoice->id, $keyDate, [
                         'client_id' => $clientId,
-                        'due_date' => $due->format('Y-m-d'),
-                        'balance' => $balance,
+                        'due_date'  => $due->format('Y-m-d'),
+                        'balance'   => $balance,
                     ]);
                 }
 
@@ -215,7 +217,7 @@ class SendDailyRemindersCommand extends Command
                 continue;
             }
 
-            // Due soon rules: 7/3/0 days before
+            // Due soon: 7/3/0
             foreach ($offsets as $daysBefore) {
                 $target = $today->copy()->addDays((int) $daysBefore)->toDateString();
                 if ($due->toDateString() !== $target) continue;
@@ -233,15 +235,15 @@ class SendDailyRemindersCommand extends Command
 
                 if (! $dryRun) {
                     $this->createActivity([
-                        'subject'         => "[REMINDER] Invoice due ({$daysBefore}d)",
-                        'type'            => 'note',
-                        'body'            => $msg,
-                        'activity_at'     => now(),
+                        'subject'           => "[REMINDER] Invoice due ({$daysBefore}d)",
+                        'type'              => 'note',
+                        'body'              => $msg,
+                        'activity_at'       => now(),
                         'next_follow_up_at' => null,
-                        'status'          => 'open',
-                        'actor_id'        => $actorId,
-                        'actionable_type' => \App\Models\Client::class,
-                        'actionable_id'   => $clientId,
+                        'status'            => 'open',
+                        'actor_id'          => $actorId,
+                        'actionable_type'   => \App\Models\Client::class,
+                        'actionable_id'     => $clientId,
                     ]);
 
                     $this->notifyOwners($owners, new DueReminderNotification(
@@ -250,19 +252,19 @@ class SendDailyRemindersCommand extends Command
                         url: $url,
                         meta: [
                             'reminder_type' => $type,
-                            'invoice_id' => (int) $invoice->id,
-                            'client_id' => $clientId,
-                            'due_date' => $due->format('Y-m-d'),
-                            'days_before' => (int) $daysBefore,
-                            'balance' => $balance,
+                            'invoice_id'    => (int) $invoice->id,
+                            'client_id'     => $clientId,
+                            'due_date'      => $due->format('Y-m-d'),
+                            'days_before'   => (int) $daysBefore,
+                            'balance'       => $balance,
                         ]
                     ));
 
                     $this->markSent($type, Invoice::class, (int) $invoice->id, $keyDate, [
-                        'client_id' => $clientId,
-                        'due_date' => $due->format('Y-m-d'),
+                        'client_id'   => $clientId,
+                        'due_date'    => $due->format('Y-m-d'),
                         'days_before' => (int) $daysBefore,
-                        'balance' => $balance,
+                        'balance'     => $balance,
                     ]);
                 }
 
@@ -277,17 +279,17 @@ class SendDailyRemindersCommand extends Command
     {
         $sent = 0;
 
-        // A) Leads follow-up due (Spec: leads.next_follow_up_at <= today)
+        // Leads follow-up due
         $leads = Lead::query()
             ->whereNotNull('next_follow_up_at')
             ->whereDate('next_follow_up_at', '<=', $today->toDateString())
             ->orderBy('next_follow_up_at')
-            ->limit(config('reminders.max_per_type', 50))
+            ->limit((int) config('reminders.max_per_type', 50))
             ->get();
 
         foreach ($leads as $lead) {
             $type = 'followup_due_lead';
-            $keyDate = $today->toDateString(); // daily until updated
+            $keyDate = $today->toDateString();
 
             if (! $this->shouldSend($type, Lead::class, (int) $lead->id, $keyDate)) {
                 continue;
@@ -300,15 +302,15 @@ class SendDailyRemindersCommand extends Command
 
             if (! $dryRun) {
                 $this->createActivity([
-                    'subject'         => "[REMINDER] Follow-up due (Lead)",
-                    'type'            => 'note',
-                    'body'            => $msg,
-                    'activity_at'     => now(),
+                    'subject'           => "[REMINDER] Follow-up due (Lead)",
+                    'type'              => 'note',
+                    'body'              => $msg,
+                    'activity_at'       => now(),
                     'next_follow_up_at' => null,
-                    'status'          => 'open',
-                    'actor_id'        => $actorId,
-                    'actionable_type' => Lead::class,
-                    'actionable_id'   => (int) $lead->id,
+                    'status'            => 'open',
+                    'actor_id'          => $actorId,
+                    'actionable_type'   => Lead::class,
+                    'actionable_id'     => (int) $lead->id,
                 ]);
 
                 $this->notifyOwners($owners, new DueReminderNotification(
@@ -316,9 +318,9 @@ class SendDailyRemindersCommand extends Command
                     message: $msg,
                     url: $url,
                     meta: [
-                        'reminder_type' => $type,
-                        'lead_id' => (int) $lead->id,
-                        'next_follow_up_at' => Carbon::parse($lead->next_follow_up_at)->toIso8601String(),
+                        'reminder_type'      => $type,
+                        'lead_id'            => (int) $lead->id,
+                        'next_follow_up_at'  => Carbon::parse($lead->next_follow_up_at)->toIso8601String(),
                     ]
                 ));
 
@@ -330,13 +332,13 @@ class SendDailyRemindersCommand extends Command
             $sent++;
         }
 
-        // B) Activities follow-up due (Spec: activities.next_follow_up_at today / due)
+        // Activities follow-up due
         $activities = Activity::query()
             ->where('status', 'open')
             ->whereNotNull('next_follow_up_at')
             ->whereDate('next_follow_up_at', '<=', $today->toDateString())
             ->orderBy('next_follow_up_at')
-            ->limit(config('reminders.max_per_type', 50))
+            ->limit((int) config('reminders.max_per_type', 50))
             ->get();
 
         foreach ($activities as $activity) {
@@ -350,31 +352,28 @@ class SendDailyRemindersCommand extends Command
             $msg = "Activity #{$activity->id} follow-up due | {$activity->subject} | Next: " .
                 Carbon::parse($activity->next_follow_up_at)->format('Y-m-d H:i');
 
-            $url = null; // if you later add Activity show page, set here
-
             if (! $dryRun) {
-                // create reminder Activity attached to the same actionable model
                 $this->createActivity([
-                    'subject'         => "[REMINDER] Follow-up due (Activity)",
-                    'type'            => 'note',
-                    'body'            => $msg,
-                    'activity_at'     => now(),
+                    'subject'           => "[REMINDER] Follow-up due (Activity)",
+                    'type'              => 'note',
+                    'body'              => $msg,
+                    'activity_at'       => now(),
                     'next_follow_up_at' => null,
-                    'status'          => 'open',
-                    'actor_id'        => $actorId,
-                    'actionable_type' => $activity->actionable_type,
-                    'actionable_id'   => (int) $activity->actionable_id,
+                    'status'            => 'open',
+                    'actor_id'          => $actorId,
+                    'actionable_type'   => $activity->actionable_type,
+                    'actionable_id'     => (int) $activity->actionable_id,
                 ]);
 
                 $this->notifyOwners($owners, new DueReminderNotification(
                     title: "Follow-up due (Activity)",
                     message: $msg,
-                    url: $url,
+                    url: null,
                     meta: [
-                        'reminder_type' => $type,
-                        'activity_id' => (int) $activity->id,
-                        'actionable_type' => $activity->actionable_type,
-                        'actionable_id' => (int) $activity->actionable_id,
+                        'reminder_type'     => $type,
+                        'activity_id'       => (int) $activity->id,
+                        'actionable_type'   => $activity->actionable_type,
+                        'actionable_id'     => (int) $activity->actionable_id,
                         'next_follow_up_at' => Carbon::parse($activity->next_follow_up_at)->toIso8601String(),
                     ]
                 ));
@@ -390,15 +389,44 @@ class SendDailyRemindersCommand extends Command
         return $sent;
     }
 
+    /**
+     * ✅ FIX: do not use ->role() scope (it fails if User model doesn't include HasRoles).
+     * We fetch Owner users via DB join (Spatie tables) OR fallback users.role_id if exists.
+     */
     private function ownerUsers(): Collection
     {
-        // Spatie role based (Spec: Owner role exists)
-        // If you also want fallback by permission, add ->permission('dashboard.owner')
-        if (method_exists(User::class, 'role')) {
-            return User::query()->role('Owner')->get();
+        // 1) Spatie tables (works even if User model missing HasRoles trait)
+        if (Schema::hasTable('model_has_roles') && Schema::hasTable('roles')) {
+            $owners = User::query()
+                ->select('users.*')
+                ->join('model_has_roles', function ($join) {
+                    $join->on('users.id', '=', 'model_has_roles.model_id')
+                        ->where('model_has_roles.model_type', '=', User::class);
+                })
+                ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                ->where('roles.name', '=', 'Owner')
+                ->distinct()
+                ->get();
+
+            if ($owners->isNotEmpty()) {
+                return $owners;
+            }
         }
 
-        // Fallback (should not happen in your spec setup)
+        // 2) Fallback: if you have users.role_id (custom)
+        if (Schema::hasTable('roles') && Schema::hasColumn('users', 'role_id')) {
+            $owners = User::query()
+                ->select('users.*')
+                ->join('roles', 'roles.id', '=', 'users.role_id')
+                ->where('roles.name', '=', 'Owner')
+                ->get();
+
+            if ($owners->isNotEmpty()) {
+                return $owners;
+            }
+        }
+
+        // 3) Final fallback: at least one user
         return User::query()->limit(1)->get();
     }
 
@@ -411,7 +439,6 @@ class SendDailyRemindersCommand extends Command
 
     private function createActivity(array $data): void
     {
-        // Avoid mass-assignment issues: use forceFill
         $activity = new Activity();
         $activity->forceFill($data);
         $activity->save();
@@ -430,12 +457,12 @@ class SendDailyRemindersCommand extends Command
     private function markSent(string $type, string $entityType, int $entityId, string $remindOn, array $meta = []): void
     {
         ReminderLog::query()->create([
-            'type' => $type,
+            'type'        => $type,
             'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'remind_on' => $remindOn,
-            'sent_at' => now(),
-            'meta' => $meta,
+            'entity_id'   => $entityId,
+            'remind_on'   => $remindOn,
+            'sent_at'     => now(),
+            'meta'        => $meta,
         ]);
     }
 }
