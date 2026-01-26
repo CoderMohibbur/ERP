@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
         InvoiceItemSeeder::class,
         PaymentMethodSeeder::class,
         PaymentSeeder::class,
+        RolesAndPermissionsSeeder::class,
     ]);
 
     }
