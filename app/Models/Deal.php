@@ -11,13 +11,12 @@ class Deal extends Model
 {
     use HasFactory, SoftDeletes;
 
-    // Stage (DealStage)
-    public const STAGE_NEW          = 'new';
-    public const STAGE_CONTACTED    = 'contacted';
-    public const STAGE_QUOTED       = 'quoted';
-    public const STAGE_NEGOTIATING  = 'negotiating';
-    public const STAGE_WON          = 'won';
-    public const STAGE_LOST         = 'lost';
+    public const STAGE_NEW         = 'new';
+    public const STAGE_CONTACTED   = 'contacted';
+    public const STAGE_QUOTED      = 'quoted';
+    public const STAGE_NEGOTIATING = 'negotiating';
+    public const STAGE_WON         = 'won';
+    public const STAGE_LOST        = 'lost';
 
     public const STAGES = [
         self::STAGE_NEW,
@@ -32,14 +31,19 @@ class Deal extends Model
         'title',
         'lead_id',
         'client_id',
+        'project_id',
+        'advance_invoice_id',
+
         'stage',
         'value_estimated',
         'currency',
         'probability',
         'expected_close_date',
+
         'won_at',
         'lost_at',
         'lost_reason',
+
         'owner_id',
         'created_by',
         'updated_by',
@@ -53,12 +57,6 @@ class Deal extends Model
         'lost_at'             => 'datetime',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
     public function lead()
     {
         return $this->belongsTo(Lead::class, 'lead_id');
@@ -67,6 +65,16 @@ class Deal extends Model
     public function client()
     {
         return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function advanceInvoice()
+    {
+        return $this->belongsTo(Invoice::class, 'advance_invoice_id');
     }
 
     public function owner()
@@ -89,26 +97,10 @@ class Deal extends Model
         return $this->morphMany(Activity::class, 'actionable');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes
-    |--------------------------------------------------------------------------
-    */
-
     public function scopeExpectedCloseDue(Builder $query, ?\DateTimeInterface $date = null): Builder
     {
         $date = $date ?: now()->toDate();
         return $query->whereNotNull('expected_close_date')
             ->where('expected_close_date', '<=', $date);
-    }
-
-    public function isWon(): bool
-    {
-        return $this->stage === self::STAGE_WON;
-    }
-
-    public function isLost(): bool
-    {
-        return $this->stage === self::STAGE_LOST;
     }
 }

@@ -25,7 +25,8 @@ class LeadController extends Controller
         $followUpTo = $request->input('follow_up_to');
 
         $leads = Lead::query()
-            ->with(['owner'])
+            // N+1 safe + lighter payload (only id,name from owner)
+            ->with(['owner:id,name'])
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($qq) use ($q) {
                     $qq->where('name', 'like', "%{$q}%")
@@ -50,7 +51,19 @@ class LeadController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('leads.index', compact('leads', 'statuses', 'sources', 'owners', 'q', 'status', 'source', 'ownerId', 'followUpFrom', 'followUpTo', 'perPage'));
+        return view('leads.index', compact(
+            'leads',
+            'statuses',
+            'sources',
+            'owners',
+            'q',
+            'status',
+            'source',
+            'ownerId',
+            'followUpFrom',
+            'followUpTo',
+            'perPage'
+        ));
     }
 
     public function create(): View
@@ -77,7 +90,22 @@ class LeadController extends Controller
 
     public function show(Lead $lead): View
     {
-        $lead->load(['owner']);
+        // N+1 safe for lead show page (if view lists activities/deals/clients/actor names)
+        $lead->loadMissing([
+            'owner:id,name',
+            'convertedClient:id,name',
+            'deals' => function ($q) {
+                $q->with([
+                    'client:id,name',
+                    'owner:id,name',
+                ])->orderByDesc('id');
+            },
+            'activities' => function ($q) {
+                $q->with(['actor:id,name'])
+                  ->orderByDesc('activity_at')
+                  ->orderByDesc('id');
+            },
+        ]);
 
         return view('leads.show', compact('lead'));
     }

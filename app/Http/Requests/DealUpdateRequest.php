@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Deal;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -18,16 +19,13 @@ class DealUpdateRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
 
-            'stage' => [
-                'required',
-                'string',
-                Rule::in(['new', 'contacted', 'quoted', 'negotiating', 'won', 'lost']),
-            ],
+            'stage' => ['required', 'string', Rule::in(Deal::STAGES)],
 
             'lead_id' => ['nullable', 'integer', 'exists:leads,id'],
             'client_id' => ['nullable', 'integer', 'exists:clients,id'],
 
             'value_estimated' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'max:3'],
             'probability' => ['nullable', 'integer', 'min:0', 'max:100'],
             'expected_close_date' => ['nullable', 'date'],
         ];

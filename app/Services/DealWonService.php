@@ -12,46 +12,46 @@ use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class DealWonService
 {
     public function handle(Deal $deal): void
     {
-        if ((string) $deal->stage !== 'won') {
+        if ((string) $deal->stage !== Deal::STAGE_WON) {
             return;
         }
 
         DB::transaction(function () use ($deal) {
-            // Ensure won_at if column exists
+            // ✅ Lock deal row (prevents 2 tabs = 2 invoices/projects)
+            $deal = Deal::query()->whereKey($deal->id)->lockForUpdate()->firstOrFail();
+
+            // Ensure won_at set once (if column exists)
             if (Schema::hasColumn('deals', 'won_at') && empty($deal->won_at)) {
                 $deal->won_at = now();
                 $deal->saveQuietly();
             }
 
             $client = $this->ensureClient($deal);
-
             $project = $this->createProjectIfNeeded($deal, $client);
 
             $this->createDefaultTasksIfNeeded($project);
 
             $this->createAdvanceInvoiceIfEligible($deal, $client);
 
-            $this->logDealWonActivity($deal);
-        });
+            $this->logDealWonActivityIfMissing($deal);
+        }, 3);
     }
 
     private function ensureClient(Deal $deal): Client
     {
-        // If already has client
         if (!empty($deal->client_id)) {
             return Client::query()->findOrFail($deal->client_id);
         }
 
-        // Try from lead conversion
         $lead = null;
         if (!empty($deal->lead_id)) {
             $lead = Lead::query()->find($deal->lead_id);
+
             if ($lead && !empty($lead->converted_client_id)) {
                 $client = Client::query()->findOrFail($lead->converted_client_id);
                 $deal->client_id = $client->id;
@@ -60,7 +60,7 @@ class DealWonService
             }
         }
 
-        // Create client from deal/lead (safe column mapping)
+        // Create client from lead/deal (column-safe)
         $client = new Client();
 
         $data = [
@@ -86,7 +86,6 @@ class DealWonService
 
     private function createProjectIfNeeded(Deal $deal, Client $client): Project
     {
-        // If deals.project_id exists and already set, reuse
         if (Schema::hasColumn('deals', 'project_id') && !empty($deal->project_id)) {
             return Project::query()->findOrFail($deal->project_id);
         }
@@ -94,12 +93,12 @@ class DealWonService
         $project = new Project();
 
         $data = [
-            'client_id'    => $client->id,
-            'name'         => $deal->title,
-            'title'        => $deal->title, // some schemas use title
-            'description'  => 'Auto-created from Deal #' . $deal->id,
-            'status'       => 'active',
-            'start_date'   => now()->toDateString(),
+            'client_id'   => $client->id,
+            'name'        => $deal->title,
+            'title'       => $deal->title,
+            'description' => 'Auto-created from Deal #' . $deal->id,
+            'status'      => 'active',
+            'start_date'  => now()->toDateString(),
         ];
 
         $this->fillIfColumnsExist($project, $data);
@@ -115,7 +114,11 @@ class DealWonService
 
     private function createDefaultTasksIfNeeded(Project $project): void
     {
-        // Prevent duplicates: if project already has tasks, skip
+        if (!Schema::hasColumn('tasks', 'project_id')) {
+            return;
+        }
+
+        // ✅ idempotent: if any task exists in project, do nothing
         if (Task::query()->where('project_id', $project->id)->exists()) {
             return;
         }
@@ -135,7 +138,7 @@ class DealWonService
                 'project_id' => $project->id,
                 'title'      => $title,
                 'name'       => $title,
-                'status'     => 'backlog',
+                'status'     => 'backlog', // TaskStatus per spec
                 'priority'   => 3,
             ];
 
@@ -146,12 +149,35 @@ class DealWonService
 
     private function createAdvanceInvoiceIfEligible(Deal $deal, Client $client): void
     {
-        if (empty($deal->value_estimated) || (float) $deal->value_estimated <= 0) {
+        if (!Schema::hasTable('invoices')) {
             return;
         }
 
-        // Optional: only if you want always create advance invoice
-        $advance = round(((float) $deal->value_estimated) * 0.5, 2);
+        $estimated = (float) ($deal->value_estimated ?? 0);
+        if ($estimated <= 0) {
+            return;
+        }
+
+        // ✅ Strong idempotency: deals.advance_invoice_id is the single source of truth
+        if (Schema::hasColumn('deals', 'advance_invoice_id') && !empty($deal->advance_invoice_id)) {
+            // If linked invoice exists, stop. (If deleted, you can recreate by manually clearing advance_invoice_id)
+            if (Invoice::query()->whereKey($deal->advance_invoice_id)->exists()) {
+                return;
+            }
+        }
+
+        // Secondary idempotency (if you already have invoices.deal_id in your system)
+        if (Schema::hasColumn('invoices', 'deal_id')) {
+            $exists = Invoice::query()
+                ->where('deal_id', $deal->id)
+                ->exists();
+
+            if ($exists) {
+                return;
+            }
+        }
+
+        $advance = round($estimated * 0.5, 2);
 
         $invoice = new Invoice();
 
@@ -160,17 +186,27 @@ class DealWonService
             'due_date'  => now()->addDays(7)->toDateString(),
             'status'    => 'unpaid',
             'currency'  => $deal->currency ?? 'BDT',
-            'total'     => $advance,
-            'paid_total'=> 0,
-            'balance'   => $advance,
-            'deal_id'   => $deal->id,
+
+            // totals (if columns exist)
+            'total'      => $advance,
+            'paid_total' => 0,
+            'balance'    => $advance,
+
+            // optional linkage
+            'deal_id' => $deal->id,
         ];
 
         $this->fillIfColumnsExist($invoice, $data);
         $invoice->save();
 
-        // Add one invoice item (if table exists)
-        if (class_exists(InvoiceItem::class)) {
+        // Save link on deal for hard idempotency
+        if (Schema::hasColumn('deals', 'advance_invoice_id')) {
+            $deal->advance_invoice_id = $invoice->id;
+            $deal->saveQuietly();
+        }
+
+        // Add one invoice item (if model/table exists)
+        if (class_exists(InvoiceItem::class) && Schema::hasTable('invoice_items')) {
             $item = new InvoiceItem();
 
             $itemData = [
@@ -187,13 +223,26 @@ class DealWonService
             $item->save();
         }
 
-        // Ensure status/totals are consistent
-        app(InvoiceStatusService::class)->syncInvoice((int) $invoice->id);
+        // Keep invoice totals/status consistent (if service exists)
+        if (class_exists(InvoiceStatusService::class)) {
+            app(InvoiceStatusService::class)->syncInvoice((int) $invoice->id);
+        }
     }
 
-    private function logDealWonActivity(Deal $deal): void
+    private function logDealWonActivityIfMissing(Deal $deal): void
     {
-        if (!class_exists(Activity::class)) {
+        if (!class_exists(Activity::class) || !Schema::hasTable('activities')) {
+            return;
+        }
+
+        // ✅ idempotent: do not create duplicate "Deal won" activity for same deal
+        $exists = Activity::query()
+            ->where('actionable_type', Deal::class)
+            ->where('actionable_id', $deal->id)
+            ->where('subject', 'Deal won')
+            ->exists();
+
+        if ($exists) {
             return;
         }
 
@@ -202,7 +251,7 @@ class DealWonService
         $data = [
             'subject'         => 'Deal won',
             'type'            => 'note',
-            'body'            => 'Deal marked as WON. Automations executed.',
+            'body'            => 'Deal marked as WON. Automations executed (client/project/tasks/invoice).',
             'activity_at'     => now(),
             'status'          => 'done',
             'actor_id'        => auth()->id() ?? ($deal->updated_by ?? $deal->owner_id),

@@ -21,6 +21,8 @@ class OwnerDashboardController extends Controller
         $until = $today->copy()->addDays($inDays);
 
         $followUpsDue = Lead::query()
+            // ✅ N+1 safe if dashboard shows lead owner
+            ->with(['owner:id,name'])
             ->whereNotNull('next_follow_up_at')
             ->whereDate('next_follow_up_at', '<=', $until->toDateString())
             ->orderBy('next_follow_up_at')
