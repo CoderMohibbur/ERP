@@ -15,28 +15,28 @@ use Illuminate\View\View;
 
 class OwnerDashboardController extends Controller
 {
-    public function __construct()
-    {
-        // dashboard is sensitive (owner-only / management)
-        $this->middleware('auth');
+    // public function __construct()
+    // {
+    //     // dashboard is sensitive (owner-only / management)
+    //     $this->middleware('auth');
 
-        // safest permission check (supports either exact or wildcard)
-        // - spec uses: dashboard.owner / dashboard.team (wildcards possible)
-        // - keep backward compatibility: owner_dashboard.view / owner_dashboard.*
-        $this->middleware(function ($request, $next) {
-            $u = auth()->user();
+    //     // safest permission check (supports either exact or wildcard)
+    //     // - spec uses: dashboard.owner / dashboard.team (wildcards possible)
+    //     // - keep backward compatibility: owner_dashboard.view / owner_dashboard.*
+    //     $this->middleware(function ($request, $next) {
+    //         $u = auth()->user();
 
-            abort_unless($u, 401);
+    //         abort_unless($u, 401);
 
-            $allowed =
-                $u->can('dashboard.owner') || $u->can('dashboard.*') ||
-                $u->can('owner_dashboard.view') || $u->can('owner_dashboard.*');
+    //         $allowed =
+    //             $u->can('dashboard.owner') || $u->can('dashboard.*') ||
+    //             $u->can('owner_dashboard.view') || $u->can('owner_dashboard.*');
 
-            abort_unless($allowed, 403);
+    //         abort_unless($allowed, 403);
 
-            return $next($request);
-        });
-    }
+    //         return $next($request);
+    //     });
+    // }
 
     public function index(Request $request): View
     {
