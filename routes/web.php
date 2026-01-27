@@ -40,7 +40,8 @@ use App\Http\Controllers\{
     ServiceRenewalController,
     ActivityController, 
     ProjectBoardController,
-    TaskStatusController
+    TaskStatusController,
+    ActivityPageController,
 };
 
 
@@ -140,3 +141,6 @@ Route::get('projects/{project}/board', ProjectBoardController::class)
 Route::patch('tasks/{task}/status', TaskStatusController::class)
     ->name('tasks.status')
     ->middleware('permission:task.update|task.*');
+
+        Route::get('/activities', [ActivityPageController::class, 'index'])->name('activities.index');
+    Route::get('/activities/{activity}', [ActivityPageController::class, 'show'])->name('activities.show');
