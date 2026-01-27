@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Activity;
 use App\Models\Deal;
 use App\Models\Lead;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -13,16 +14,18 @@ class ActivityStoreRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
-        return $user && ($user->can('activity.create') || $user->can('activity.*'));
+        return $user && (
+            $user->can('activity.create')
+            || $user->can('activity.store')
+            || $user->can('activity.*')
+        );
     }
 
     public function rules(): array
     {
-        $typeChoices = ['call', 'whatsapp', 'email', 'meeting', 'note'];
-
         return [
             'subject' => ['required', 'string', 'max:190'],
-            'type' => ['required', 'string', Rule::in($typeChoices)],
+            'type' => ['required', 'string', Rule::in(Activity::TYPES)],
             'body' => ['nullable', 'string'],
 
             'activity_at' => ['nullable', 'date'],
@@ -40,6 +43,7 @@ class ActivityStoreRequest extends FormRequest
                         return;
                     }
 
+                    // MVP: only Lead/Deal
                     if (!in_array($class, [Lead::class, Deal::class], true)) {
                         $fail('Invalid actionable type.');
                     }

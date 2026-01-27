@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Services\TimeLogService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class TimeLogController extends Controller
 {
@@ -17,9 +18,13 @@ class TimeLogController extends Controller
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $service->start($task, auth()->user(), $request->string('note')->toString());
-
-        return back()->with('success', 'Timer started.');
+        try {
+            $service->start($task, auth()->user(), $request->string('note')->toString());
+            return back()->with('success', 'Timer started.');
+        } catch (ValidationException $e) {
+            $msg = data_get($e->errors(), 'timer.0') ?? 'Unable to start timer.';
+            return back()->with('error', $msg);
+        }
     }
 
     public function stop(Request $request, Task $task, TimeLogService $service)

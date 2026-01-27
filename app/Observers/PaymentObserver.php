@@ -7,33 +7,37 @@ use App\Services\InvoiceStatusService;
 
 class PaymentObserver
 {
-    public function saved(Payment $payment): void
+    public function created(Payment $payment): void
     {
-        $service = app(InvoiceStatusService::class);
+        $this->sync($payment);
+    }
 
-        $currentInvoiceId = $payment->invoice_id ?? null;
-        $originalInvoiceId = $payment->getOriginal('invoice_id');
-
-        if ($originalInvoiceId && $originalInvoiceId !== $currentInvoiceId) {
-            $service->syncInvoice((int) $originalInvoiceId);
-        }
-
-        if ($currentInvoiceId) {
-            $service->syncInvoice((int) $currentInvoiceId);
-        }
+    public function updated(Payment $payment): void
+    {
+        $this->sync($payment);
     }
 
     public function deleted(Payment $payment): void
     {
-        if ($payment->invoice_id) {
-            app(InvoiceStatusService::class)->syncInvoice((int) $payment->invoice_id);
-        }
+        $this->sync($payment);
     }
 
     public function restored(Payment $payment): void
     {
-        if ($payment->invoice_id) {
-            app(InvoiceStatusService::class)->syncInvoice((int) $payment->invoice_id);
+        $this->sync($payment);
+    }
+
+    public function forceDeleted(Payment $payment): void
+    {
+        $this->sync($payment);
+    }
+
+    private function sync(Payment $payment): void
+    {
+        if (empty($payment->invoice_id)) {
+            return;
         }
+
+        app(InvoiceStatusService::class)->syncInvoice((int) $payment->invoice_id);
     }
 }

@@ -12,19 +12,31 @@ class ActivityPageController extends Controller
     {
         $this->middleware('auth');
 
-        // ✅ Optional (আপনার Spatie permission seed করা থাকলে অন করুন)
-        // $this->middleware('permission:activity.view|activity.*')->only(['index', 'show']);
+        // 🔒 P0: DO NOT leave this commented.
+        // Allow if user has any of these permissions (Spatie):
+        // - activity.* (spec minimum)
+        // - activity.view / activity.index (optional granular)
+        $this->middleware('permission:activity.*|activity.view|activity.index')->only(['index', 'show']);
     }
 
     public function index(Request $request)
     {
-        $types = ['call', 'whatsapp', 'email', 'meeting', 'note'];
-        $statuses = ['open', 'done'];
+        $user = $request->user();
+        $types = Activity::TYPES;
+        $statuses = Activity::STATUSES;
 
         $query = Activity::query()
-            ->with(['actor', 'actionable'])
+            ->with([
+                'actor:id,name',
+                'actionable',
+            ])
             ->orderByDesc('activity_at')
             ->orderByDesc('id');
+
+        // 🔒 If user doesn't have "view all", limit to own activities only
+        if (!$this->canViewAllActivities($user)) {
+            $query->where('actor_id', $user->id);
+        }
 
         $q = trim((string) $request->input('q', ''));
         if ($q !== '') {
@@ -35,17 +47,15 @@ class ActivityPageController extends Controller
         }
 
         if ($request->filled('type')) {
-            $query->where('type', $request->input('type'));
+            $query->where('type', (string) $request->input('type'));
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $query->where('status', (string) $request->input('status'));
         }
 
         if ($request->boolean('followup_due')) {
-            $query->where('status', 'open')
-                ->whereNotNull('next_follow_up_at')
-                ->where('next_follow_up_at', '<=', now());
+            $query->followUpDue();
         }
 
         if ($request->filled('from')) {
@@ -75,14 +85,36 @@ class ActivityPageController extends Controller
         ]);
     }
 
-    public function show(Activity $activity)
+    public function show(Request $request, Activity $activity)
     {
-        $activity->load(['actor', 'actionable']);
+        $user = $request->user();
+
+        // 🔒 Block direct URL access to others' activities if user can't view all
+        if (!$this->canViewAllActivities($user) && (int) $activity->actor_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $activity->load([
+            'actor:id,name',
+            'actionable',
+        ]);
 
         return view('activities.show', [
             'activity' => $activity,
-            'types' => ['call', 'whatsapp', 'email', 'meeting', 'note'],
-            'statuses' => ['open', 'done'],
+            'types' => Activity::TYPES,
+            'statuses' => Activity::STATUSES,
         ]);
+    }
+
+    private function canViewAllActivities($user): bool
+    {
+        if (!$user) return false;
+
+        // Spec minimum: activity.* means full access
+        return $user->can('activity.*')
+            || $user->can('activity.viewAll')
+            || $user->can('activity.view_any')
+            || $user->can('activity.viewAny')
+            || $user->can('activity.admin');
     }
 }

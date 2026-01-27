@@ -10,6 +10,7 @@ use App\Services\InvoiceStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ServiceRenewalController extends Controller
 {
@@ -21,7 +22,6 @@ class ServiceRenewalController extends Controller
         abort_unless(auth()->check(), 401);
         abort_unless(auth()->user()->can('renewal.view') || auth()->user()->can('renewal.*'), 403);
 
-        // Validate filters (safe, no FormRequest needed for read)
         $validated = $request->validate([
             'status' => 'nullable|in:pending,invoiced,paid,skipped',
             'from'   => 'nullable|date',
@@ -30,9 +30,9 @@ class ServiceRenewalController extends Controller
 
         $renewals = ServiceRenewal::query()
             ->with(['service.client'])
-            ->when(!empty($validated['status']), fn ($q) => $q->where('status', $validated['status']))
-            ->when(!empty($validated['from']), fn ($q) => $q->whereDate('renewal_date', '>=', $validated['from']))
-            ->when(!empty($validated['to']), fn ($q) => $q->whereDate('renewal_date', '<=', $validated['to']))
+            ->when($validated['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
+            ->when($validated['from'] ?? null, fn ($q, $v) => $q->whereDate('renewal_date', '>=', $v))
+            ->when($validated['to'] ?? null, fn ($q, $v) => $q->whereDate('renewal_date', '<=', $v))
             ->orderByDesc('renewal_date')
             ->paginate(20)
             ->withQueryString();
@@ -41,7 +41,7 @@ class ServiceRenewalController extends Controller
     }
 
     /**
-     * Show renewal (UI)
+     * Show renewal
      */
     public function show(ServiceRenewal $serviceRenewal)
     {
@@ -54,7 +54,7 @@ class ServiceRenewalController extends Controller
     }
 
     /**
-     * Generate invoice from a Service (Mandatory flow)
+     * Generate renewal invoice (Service -> Invoice + Item + ServiceRenewal row)
      */
     public function generateInvoice(Service $service)
     {
@@ -62,47 +62,70 @@ class ServiceRenewalController extends Controller
         abort_unless(auth()->user()->can('renewal.create') || auth()->user()->can('renewal.*'), 403);
 
         if (empty($service->client_id)) {
-            return back()->with('error', 'This service has no client. Please set client first.');
+            return back()->with('error', 'Service has no client assigned.');
         }
 
-        // Prevent accidental duplicates for the same service + same renewal_date
-        $renewalDate = $service->next_renewal_at ? (string) $service->next_renewal_at : now()->toDateString();
+        $renewalDate = $service->next_renewal_at
+            ? (method_exists($service->next_renewal_at, 'toDateString')
+                ? $service->next_renewal_at->toDateString()
+                : (string) $service->next_renewal_at)
+            : now()->toDateString();
 
-        $existingQuery = ServiceRenewal::query()
+        // 🔒 Prevent duplicate invoice for same service + date
+        $existing = ServiceRenewal::query()
             ->where('service_id', $service->id)
             ->whereDate('renewal_date', $renewalDate)
             ->whereNotNull('invoice_id')
-            ->whereIn('status', ['invoiced', 'paid']);
+            ->whereIn('status', [ServiceRenewal::STATUS_INVOICED, ServiceRenewal::STATUS_PAID])
+            ->first();
 
-        // softDeletes safe check
-        if (Schema::hasColumn((new ServiceRenewal())->getTable(), 'deleted_at')) {
-            $existingQuery->whereNull('deleted_at');
-        }
-
-        $existing = $existingQuery->first();
         if ($existing) {
-            return back()->with('success', 'Renewal invoice already generated.')->with('renewal_id', $existing->id);
+            return back()
+                ->with('success', 'Renewal invoice already generated.')
+                ->with('renewal_id', $existing->id);
         }
 
         DB::transaction(function () use ($service, $renewalDate) {
+            $amount = round((float) ($service->amount ?? 0), 2);
+
+            /** @var Invoice $invoice */
             $invoice = new Invoice();
 
-            $amount = (float) ($service->amount ?? 0);
-
+            // invoice fields (schema-safe: support old/new columns)
             $invoiceData = [
                 'client_id'   => $service->client_id,
                 'due_date'    => now()->addDays(7)->toDateString(),
+                'issue_date'  => now()->toDateString(),
+
+                // Prefer your InvoiceStatusService logic which writes to `status`:contentReference[oaicite:2]{index=2}
                 'status'      => 'unpaid',
+
+                // If some schema uses erp_status, set it too (won’t error due to fillIfColumnsExist)
+                'erp_status'  => 'unpaid',
+
                 'currency'    => $service->currency ?? 'BDT',
-                'total'       => $amount,
-                'paid_total'  => 0,
-                'balance'     => $amount,
+
+                // totals (both schema styles)
+                'total'        => $amount,
+                'total_amount' => $amount,
+
+                'paid_total'   => 0,
+                'paid_amount'  => 0,
+
+                'balance'      => $amount,
+                'due_amount'   => $amount,
+
+                // optional legacy fields
+                'invoice_number' => 'INV-' . now()->format('Ymd-His') . '-' . Str::upper(Str::random(4)),
+                'invoice_type'   => 'final',
             ];
 
             $this->fillIfColumnsExist($invoice, $invoiceData);
             $invoice->save();
 
+            // Invoice Item (optional table/columns safe)
             if (class_exists(InvoiceItem::class)) {
+                /** @var InvoiceItem $item */
                 $item = new InvoiceItem();
 
                 $itemData = [
@@ -119,6 +142,7 @@ class ServiceRenewalController extends Controller
                 $item->save();
             }
 
+            /** @var ServiceRenewal $renewal */
             $renewal = new ServiceRenewal();
 
             $renewalData = [
@@ -126,19 +150,23 @@ class ServiceRenewalController extends Controller
                 'renewal_date' => $renewalDate,
                 'amount'       => $amount,
                 'invoice_id'   => $invoice->id,
-                'status'       => 'invoiced',
+                'status'       => ServiceRenewal::STATUS_INVOICED,
                 'created_by'   => auth()->id(),
             ];
 
             $this->fillIfColumnsExist($renewal, $renewalData);
             $renewal->save();
 
+            // 🔁 Final safety sync: recalculates totals/status based on your existing service logic
             app(InvoiceStatusService::class)->syncInvoice((int) $invoice->id);
         });
 
-        return back()->with('success', 'Renewal invoice generated.');
+        return back()->with('success', 'Renewal invoice generated successfully.');
     }
 
+    /**
+     * Fill model only if column exists (schema-safe)
+     */
     private function fillIfColumnsExist($model, array $data): void
     {
         $table = $model->getTable();

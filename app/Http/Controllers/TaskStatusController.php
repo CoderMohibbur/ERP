@@ -10,41 +10,56 @@ class TaskStatusController extends Controller
 {
     public function __invoke(TaskStatusUpdateRequest $request, Task $task)
     {
-        $validated = $request->validated();
-        $newStatus = $validated['status'];
-        $oldStatus = $task->status ?? null;
+        $status = $request->string('status')->toString();
+        $blockedReason = $request->input('blocked_reason');
 
-        // status column না থাকলে board কাজই সম্ভব না—তবুও graceful
-        if (!Schema::hasColumn('tasks', 'status')) {
-            return back()->with('error', 'tasks টেবিলে status কলাম নেই। আগে status কলাম ensure করুন।');
+        $update = [];
+
+        // Prefer spec-compatible erp_status if present, else map to legacy enum
+        if (Schema::hasColumn('tasks', 'erp_status')) {
+            $update['erp_status'] = $status;
+        } else {
+            $update['status'] = $this->boardToLegacyStatus($status);
         }
 
-        $task->status = $newStatus;
-
-        // Optional columns safely set (কলাম থাকলেই)
-        if (Schema::hasColumn('tasks', 'blocked_reason') && array_key_exists('blocked_reason', $validated)) {
-            $task->blocked_reason = $validated['blocked_reason'];
+        if (Schema::hasColumn('tasks', 'blocked_reason')) {
+            $update['blocked_reason'] = ($status === 'blocked') ? (string) $blockedReason : null;
         }
-
-        $now = now();
 
         if (Schema::hasColumn('tasks', 'started_at')) {
-            if ($newStatus === 'doing' && empty($task->started_at)) {
-                $task->started_at = $now;
+            if ($status === 'doing' && empty($task->started_at)) {
+                $update['started_at'] = now();
             }
         }
 
         if (Schema::hasColumn('tasks', 'completed_at')) {
-            if ($newStatus === 'done') {
-                $task->completed_at = $now;
-            } elseif ($oldStatus === 'done' && $newStatus !== 'done') {
-                // done থেকে অন্য status এ গেলে completed_at clear
-                $task->completed_at = null;
+            if ($status === 'done' && empty($task->completed_at)) {
+                $update['completed_at'] = now();
             }
         }
 
-        $task->save();
+        // Optional legacy end_date support
+        if (Schema::hasColumn('tasks', 'end_date')) {
+            if ($status === 'done' && empty($task->end_date)) {
+                $update['end_date'] = now()->toDateString();
+            }
+        }
+
+        // Avoid fillable issues safely (validated input)
+        $task->forceFill($update)->save();
 
         return back()->with('success', 'Task status updated.');
+    }
+
+    private function boardToLegacyStatus(string $status): string
+    {
+        return match ($status) {
+            'backlog' => 'pending',
+            'doing'   => 'in_progress',
+            'review'  => 'in_progress', // legacy schema has no "review"
+            'done'    => 'completed',
+            'blocked' => 'blocked',
+            default   => 'pending',
+        };
     }
 }

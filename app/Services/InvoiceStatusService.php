@@ -5,10 +5,21 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Models\ServiceRenewal;
 use Illuminate\Support\Facades\Schema;
 
 class InvoiceStatusService
 {
+    public const ERP_STATUS_DRAFT   = 'draft';
+    public const ERP_STATUS_UNPAID  = 'unpaid';
+    public const ERP_STATUS_PARTIAL = 'partial';
+    public const ERP_STATUS_PAID    = 'paid';
+    public const ERP_STATUS_VOID    = 'void';
+
+    /**
+     * Sync invoice totals + erp_status from invoice items + payments.
+     * Also keeps ServiceRenewal.status consistent when invoice is paid.
+     */
     public function syncInvoice(int $invoiceId): void
     {
         $invoice = Invoice::query()->find($invoiceId);
@@ -16,60 +27,130 @@ class InvoiceStatusService
             return;
         }
 
+        $currentErpStatus = $this->getErpStatus($invoice);
+
         // If invoice is void, never touch it
-        if (isset($invoice->status) && (string) $invoice->status === 'void') {
+        if ($currentErpStatus === self::ERP_STATUS_VOID) {
             return;
         }
 
         $total = $this->getInvoiceTotal($invoiceId, $invoice);
         $paid  = $this->getInvoicePaidTotal($invoiceId);
 
-        $balance = max(0, round($total - $paid, 2));
+        // DB has 14,4 totals; keep 4-decimal safe
+        $total = round($total, 4);
+        $paid  = round($paid, 4);
 
-        $status = 'unpaid';
-        if ($paid > 0 && $paid < $total) {
-            $status = 'partial';
-        } elseif ($total > 0 && $paid >= $total) {
-            $status = 'paid';
-        }
+        $balance = max(0, round($total - $paid, 4));
 
-        // Write only if columns exist
+        $newErpStatus = $this->computeErpStatus($total, $paid, $currentErpStatus);
+
+        // ✅ Sync BOTH ERP + Legacy totals safely (only if columns exist)
         $this->fillIfColumnsExist($invoice, [
-            'total'      => $total,
-            'paid_total' => $paid,
-            'balance'    => $balance,
-            'status'     => $status,
+            // ERP columns
+            'total'       => $total,
+            'paid_total'  => $paid,
+            'balance'     => $balance,
+            'erp_status'  => $newErpStatus,
+
+            // Legacy columns (kept in schema)
+            'total_amount' => $total,
+            'paid_amount'  => $paid,
+            'due_amount'   => $balance,
         ]);
 
-        // Avoid unnecessary updated events (safe)
+        /**
+         * ✅ Legacy enum-safe status sync:
+         * invoices.status enum is draft/sent/paid/overdue (so never write unpaid/partial there).
+         * Only safe writes:
+         *  - paid  -> paid
+         *  - draft -> draft
+         */
+        if (Schema::hasColumn('invoices', 'status')) {
+            if ($newErpStatus === self::ERP_STATUS_PAID) {
+                $invoice->status = 'paid';
+            } elseif ($newErpStatus === self::ERP_STATUS_DRAFT) {
+                $invoice->status = 'draft';
+            }
+        }
+
         $invoice->saveQuietly();
+
+        // ✅ Renewal link consistency
+        $this->syncServiceRenewalsForInvoice($invoice->id, $newErpStatus);
+    }
+
+    private function computeErpStatus(float $total, float $paid, string $currentErpStatus): string
+    {
+        // Keep draft ONLY if no payment yet
+        if ($currentErpStatus === self::ERP_STATUS_DRAFT && $paid <= 0) {
+            return self::ERP_STATUS_DRAFT;
+        }
+
+        // If total is zero and no payment -> draft
+        if ($total <= 0 && $paid <= 0) {
+            return self::ERP_STATUS_DRAFT;
+        }
+
+        if ($paid <= 0) {
+            return self::ERP_STATUS_UNPAID;
+        }
+
+        if ($total > 0 && $paid < $total) {
+            return self::ERP_STATUS_PARTIAL;
+        }
+
+        // paid >= total (or total == 0 but payment exists)
+        return self::ERP_STATUS_PAID;
+    }
+
+    private function getErpStatus(Invoice $invoice): string
+    {
+        if (Schema::hasColumn('invoices', 'erp_status') && isset($invoice->erp_status)) {
+            return (string) $invoice->erp_status;
+        }
+
+        // Fallback (legacy-only db). If legacy has 'void' string somewhere, respect it.
+        if (Schema::hasColumn('invoices', 'status') && isset($invoice->status)) {
+            return (string) $invoice->status;
+        }
+
+        return self::ERP_STATUS_DRAFT;
     }
 
     private function getInvoicePaidTotal(int $invoiceId): float
     {
-        $amountCol = Schema::hasColumn('payments', 'amount') ? 'amount' : null;
-        if (!$amountCol) {
+        if (!Schema::hasTable('payments') || !Schema::hasColumn('payments', 'amount')) {
             return 0.0;
         }
 
-        $paid = (float) Payment::query()
-            ->where('invoice_id', $invoiceId)
-            ->sum($amountCol);
+        $q = Payment::query()->where('invoice_id', $invoiceId);
 
-        return round($paid, 2);
+        // ✅ Only approved payments count (if column exists)
+        if (Schema::hasColumn('payments', 'payment_status')) {
+            $q->where('payment_status', 'approved');
+        }
+
+        return round((float) $q->sum('amount'), 4);
     }
 
     private function getInvoiceTotal(int $invoiceId, Invoice $invoice): float
     {
-        // Prefer invoice.total if exists
+        // Prefer ERP total if exists
         if (Schema::hasColumn('invoices', 'total') && $invoice->total !== null) {
-            return round((float) $invoice->total, 2);
-        }
-        if (Schema::hasColumn('invoices', 'total_amount') && isset($invoice->total_amount)) {
-            return round((float) $invoice->total_amount, 2);
+            return (float) $invoice->total;
         }
 
-        // Fallback: compute from invoice_items
+        // fallback legacy total_amount
+        if (Schema::hasColumn('invoices', 'total_amount') && isset($invoice->total_amount)) {
+            return (float) $invoice->total_amount;
+        }
+
+        // Fallback: compute from invoice_items (support multiple schemas)
+        if (!class_exists(InvoiceItem::class) || !Schema::hasTable('invoice_items')) {
+            return 0.0;
+        }
+
         $items = InvoiceItem::query()->where('invoice_id', $invoiceId)->get();
 
         $sum = 0.0;
@@ -78,6 +159,7 @@ class InvoiceStatusService
         $hasLineTotal = Schema::hasColumn('invoice_items', 'line_total');
         $hasQty       = Schema::hasColumn('invoice_items', 'quantity');
         $hasPrice     = Schema::hasColumn('invoice_items', 'unit_price');
+        $hasTotalCol  = Schema::hasColumn('invoice_items', 'total'); // some schemas use 'total'
 
         foreach ($items as $item) {
             if ($hasAmount && $item->amount !== null) {
@@ -88,13 +170,48 @@ class InvoiceStatusService
                 $sum += (float) $item->line_total;
                 continue;
             }
+            if ($hasTotalCol && $item->total !== null) {
+                $sum += (float) $item->total;
+                continue;
+            }
             if ($hasQty && $hasPrice) {
                 $sum += ((float) $item->quantity) * ((float) $item->unit_price);
                 continue;
             }
         }
 
-        return round($sum, 2);
+        return round($sum, 4);
+    }
+
+    private function syncServiceRenewalsForInvoice(int $invoiceId, string $erpStatus): void
+    {
+        if (!class_exists(ServiceRenewal::class) || !Schema::hasTable('service_renewals') || !Schema::hasColumn('service_renewals', 'invoice_id')) {
+            return;
+        }
+
+        $q = ServiceRenewal::query()->where('invoice_id', $invoiceId);
+
+        // softDeletes safe
+        if (Schema::hasColumn('service_renewals', 'deleted_at')) {
+            $q->whereNull('deleted_at');
+        }
+
+        // never touch skipped
+        if (Schema::hasColumn('service_renewals', 'status')) {
+            $q->where('status', '!=', ServiceRenewal::STATUS_SKIPPED);
+        }
+
+        if ($erpStatus === self::ERP_STATUS_PAID) {
+            // paid => paid (never downgrade)
+            $q->where('status', '!=', ServiceRenewal::STATUS_PAID)
+              ->update(['status' => ServiceRenewal::STATUS_PAID]);
+
+            return;
+        }
+
+        // not paid yet: pending -> invoiced (but never downgrade paid)
+        $q->where('status', ServiceRenewal::STATUS_PENDING)
+          ->update(['status' => ServiceRenewal::STATUS_INVOICED]);
     }
 
     private function fillIfColumnsExist($model, array $data): void

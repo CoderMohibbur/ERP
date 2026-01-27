@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ActivityDestroyRequest;
 use App\Http\Requests\ActivityStoreRequest;
 use App\Http\Requests\ActivityUpdateRequest;
 use App\Models\Activity;
@@ -22,7 +23,7 @@ class ActivityController extends Controller
 
         $actionable = $actionableClass::query()->findOrFail((int) $data['actionable_id']);
 
-        DB::transaction(function () use ($request, $data, $actionable, $actionableClass) {
+        DB::transaction(function () use ($request, $data, $actionable) {
             $activity = new Activity();
             $activity->subject = $data['subject'];
             $activity->type = $data['type'];
@@ -67,10 +68,14 @@ class ActivityController extends Controller
                 $activity->body = $data['body'];
             }
             if (array_key_exists('activity_at', $data)) {
-                $activity->activity_at = !empty($data['activity_at']) ? Carbon::parse($data['activity_at']) : $activity->activity_at;
+                $activity->activity_at = !empty($data['activity_at'])
+                    ? Carbon::parse($data['activity_at'])
+                    : $activity->activity_at;
             }
             if (array_key_exists('next_follow_up_at', $data)) {
-                $activity->next_follow_up_at = !empty($data['next_follow_up_at']) ? Carbon::parse($data['next_follow_up_at']) : null;
+                $activity->next_follow_up_at = !empty($data['next_follow_up_at'])
+                    ? Carbon::parse($data['next_follow_up_at'])
+                    : null;
             }
             if (array_key_exists('status', $data)) {
                 $activity->status = $data['status'];
@@ -80,7 +85,6 @@ class ActivityController extends Controller
 
             $actionable = $activity->actionable;
 
-            // Lead follow-up workflow sync (lead.next_follow_up_at)
             if ($actionable instanceof Lead) {
                 $this->syncLeadNextFollowUp($actionable);
             }
@@ -89,14 +93,13 @@ class ActivityController extends Controller
         return back()->with('success', 'Activity updated successfully.');
     }
 
-    public function destroy(Activity $activity): RedirectResponse
+    public function destroy(ActivityDestroyRequest $request, Activity $activity): RedirectResponse
     {
         DB::transaction(function () use ($activity) {
             $actionable = $activity->actionable;
 
             $activity->delete();
 
-            // Lead follow-up workflow sync (lead.next_follow_up_at)
             if ($actionable instanceof Lead) {
                 $this->syncLeadNextFollowUp($actionable);
             }

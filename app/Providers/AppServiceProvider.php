@@ -9,6 +9,8 @@ use App\Models\TimeLog;
 use App\Observers\DealObserver;
 use App\Observers\PaymentObserver;
 use App\Observers\TimeLogObserver;
+use App\Models\InvoiceItem;
+use App\Observers\InvoiceItemObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,5 +30,6 @@ class AppServiceProvider extends ServiceProvider
         Deal::observe(DealObserver::class);
         Payment::observe(PaymentObserver::class);
         TimeLog::observe(TimeLogObserver::class);
+        InvoiceItem::observe(InvoiceItemObserver::class);
     }
 }
