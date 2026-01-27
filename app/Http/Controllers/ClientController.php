@@ -2,14 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ClientDestroyRequest;
+use App\Http\Requests\StoreClientRequest;
+use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class ClientController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:client.view|client.*')->only(['index', 'show']);
+        $this->middleware('permission:client.create|client.*')->only(['create', 'store']);
+        $this->middleware('permission:client.edit|client.*')->only(['edit', 'update']);
+        $this->middleware('permission:client.delete|client.*')->only(['destroy']);
+    }
+
     /**
      * Display a listing of clients.
      */
@@ -17,17 +28,17 @@ class ClientController extends Controller
     {
         $query = Client::query();
 
-        // 🔍 Optional search by name/email/company
+        // 🔍 Optional search by name/email/company_name
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%$search%")
-                    ->orWhere('email', 'like', "%$search%")
-                    ->orWhere('company_name', 'like', "%$search%");
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('company_name', 'like', "%{$search}%");
             });
         }
 
-        $clients = $query->latest()->paginate(10)->withQueryString();
+        $clients = $query->latest()->paginate(15)->withQueryString();
 
         return view('clients.index', compact('clients'));
     }
@@ -43,35 +54,9 @@ class ClientController extends Controller
     /**
      * Store a newly created client in storage.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreClientRequest $request): RedirectResponse
     {
-        // ✅ Convert custom_fields JSON string to array (if present)
-        if ($request->filled('custom_fields')) {
-            $decoded = json_decode($request->input('custom_fields'), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return back()->withErrors([
-                    'custom_fields' => '❌ Invalid JSON format in custom fields.'
-                ])->withInput();
-            }
-
-            // overwrite request input
-            $request->merge(['custom_fields' => $decoded]);
-        }
-
-        // ✅ Validation
-        $data = $request->validate([
-            'name'           => 'required|string|max:255',
-            'email'          => 'nullable|email|unique:clients,email',
-            'phone'          => 'nullable|string|max:20',
-            'address'        => 'nullable|string|max:255',
-            'company_name'   => 'nullable|string|max:255',
-            'industry_type'  => 'nullable|string|max:100',
-            'website'        => 'nullable|url|max:255',
-            'tax_id'         => 'nullable|string|max:100',
-            'status'         => 'required|in:active,inactive',
-            'custom_fields'  => 'nullable|array', // ✅ now it's safe
-        ]);
+        $data = $this->normalizeClientPayload($request->validated());
 
         $data['created_by'] = Auth::id();
 
@@ -80,6 +65,13 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client created successfully.');
     }
 
+    /**
+     * Show a single client (optional if you have route/view).
+     */
+    public function show(Client $client): View
+    {
+        return view('clients.show', compact('client'));
+    }
 
     /**
      * Show the form for editing the specified client.
@@ -92,34 +84,9 @@ class ClientController extends Controller
     /**
      * Update the specified client in storage.
      */
-    public function update(Request $request, Client $client): RedirectResponse
+    public function update(UpdateClientRequest $request, Client $client): RedirectResponse
     {
-        // ✅ Convert JSON to array first
-        if ($request->filled('custom_fields')) {
-            $decoded = json_decode($request->input('custom_fields'), true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return back()->withErrors([
-                    'custom_fields' => '❌ Invalid JSON format in custom fields.'
-                ])->withInput();
-            }
-
-            $request->merge(['custom_fields' => $decoded]);
-        }
-
-        // ✅ Validation
-        $data = $request->validate([
-            'name'           => 'required|string|max:255',
-            'email'          => 'nullable|email|unique:clients,email,' . $client->id,
-            'phone'          => 'nullable|string|max:20',
-            'address'        => 'nullable|string|max:255',
-            'company_name'   => 'nullable|string|max:255',
-            'industry_type'  => 'nullable|string|max:100',
-            'website'        => 'nullable|url|max:255',
-            'tax_id'         => 'nullable|string|max:100',
-            'status'         => 'required|in:active,inactive',
-            'custom_fields'  => 'nullable|array',
-        ]);
+        $data = $this->normalizeClientPayload($request->validated());
 
         $data['updated_by'] = Auth::id();
 
@@ -128,14 +95,48 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client updated successfully.');
     }
 
-
     /**
      * Remove the specified client from storage.
      */
-    public function destroy(Client $client): RedirectResponse
+    public function destroy(ClientDestroyRequest $request, Client $client): RedirectResponse
     {
         $client->delete();
 
         return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
+    }
+
+    /**
+     * Normalize payload:
+     * - accepts custom_fields as JSON string or array
+     * - backward compat: company -> company_name
+     */
+    private function normalizeClientPayload(array $data): array
+    {
+        // Backward-compat: old field `company` -> new `company_name`
+        if (empty($data['company_name']) && !empty($data['company'])) {
+            $data['company_name'] = $data['company'];
+        }
+
+        // Normalize custom_fields
+        if (array_key_exists('custom_fields', $data)) {
+            if ($data['custom_fields'] === null) {
+                return $data;
+            }
+
+            // If UI sends JSON string, decode it
+            if (is_string($data['custom_fields'])) {
+                $decoded = json_decode($data['custom_fields'], true);
+                $data['custom_fields'] = (json_last_error() === JSON_ERROR_NONE && is_array($decoded))
+                    ? $decoded
+                    : null;
+            }
+
+            // Ensure array; otherwise null
+            if (!is_array($data['custom_fields'])) {
+                $data['custom_fields'] = null;
+            }
+        }
+
+        return $data;
     }
 }
