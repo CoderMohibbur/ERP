@@ -56,7 +56,63 @@ class StoreClientRequest extends FormRequest
             'tax_id' => ['nullable', 'string', 'max:100'],
 
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'custom_fields' => ['nullable', 'array'],
+
+            // ✅ Accept textarea string JSON OR array; normalize in validated()
+            'custom_fields' => [
+                'nullable',
+                function (string $attribute, $value, \Closure $fail) {
+                    if (is_array($value)) {
+                        return;
+                    }
+
+                    if ($value === null) {
+                        return;
+                    }
+
+                    if (!is_string($value)) {
+                        $fail('Custom fields must be a valid JSON object or array.');
+                        return;
+                    }
+
+                    $trim = trim($value);
+
+                    // treat blank / "null" as empty
+                    if ($trim === '' || strtolower($trim) === 'null') {
+                        return;
+                    }
+
+                    $decoded = json_decode($trim, true);
+
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                        $fail('Custom fields must be valid JSON (object/array). Example: {"LinkedIn":"...","Notes":"..."}');
+                    }
+                },
+            ],
         ];
+    }
+
+    /**
+     * ✅ Normalize custom_fields to array|null so controller can safely use $request->validated()
+     */
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated();
+
+        if (array_key_exists('custom_fields', $data)) {
+            $v = $data['custom_fields'];
+
+            if (is_string($v)) {
+                $trim = trim($v);
+
+                if ($trim === '' || strtolower($trim) === 'null') {
+                    $data['custom_fields'] = null;
+                } else {
+                    $decoded = json_decode($trim, true);
+                    $data['custom_fields'] = is_array($decoded) ? $decoded : null;
+                }
+            }
+        }
+
+        return data_get($data, $key, $default);
     }
 }
