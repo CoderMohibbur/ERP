@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -16,10 +17,22 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear cached roles/permissions
+        // ✅ If Spatie tables are missing, do not crash seeding.
+        if (
+            !Schema::hasTable('roles') ||
+            !Schema::hasTable('permissions') ||
+            !Schema::hasTable('role_has_permissions') ||
+            !Schema::hasTable('model_has_roles') ||
+            !Schema::hasTable('model_has_permissions')
+        ) {
+            $this->command?->warn('Skipping RolesAndPermissionsSeeder: Spatie Permission tables not found. Run migrations first.');
+            return;
+        }
+
+        // Clear cached roles/permissions (safe)
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $guard = config('auth.defaults.guard', 'web');
+        $guard = (string) config('auth.defaults.guard', 'web');
 
         $permissionNames = $this->buildAllPermissions();
 
@@ -29,7 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::findOrCreate($name, $guard);
             }
 
-            // 2) Create roles (idempotent) — per spec
+            // 2) Create roles (idempotent) — per spec (+ optional)
             $roles = ['Owner', 'LaravelLead', 'WPLead', 'Accounts', 'Support'];
             foreach ($roles as $roleName) {
                 Role::findOrCreate($roleName, $guard);
@@ -46,23 +59,20 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // LaravelLead: CRM + Delivery + Time + Renewals + Team dashboard + Read-only finance
             $laravelLeadPatterns = [
-                // Minimum ERP scopes (wildcard supported + exact permission also exists)
                 'lead.*', 'deal.*', 'activity.*',
                 'project.*', 'task.*',
                 'timelog.*',
                 'service.*', 'renewal.*',
                 'dashboard.team',
 
-                // Existing modules (project base modules)
                 'client.*',
                 'project_file.*', 'project_note.*',
 
-                // Finance: read-only
+                // Finance read-only
                 'invoice.index', 'invoice.list', 'invoice.viewAny', 'invoice.view', 'invoice.show',
                 'payment.index', 'payment.list', 'payment.viewAny', 'payment.view', 'payment.show',
                 'expense.index', 'expense.list', 'expense.viewAny', 'expense.view', 'expense.show',
 
-                // Reports (read)
                 'report.*',
             ];
             $this->role($guard, 'LaravelLead')?->syncPermissions(
@@ -98,21 +108,16 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Support: CRM limited + Activities + Client read + dashboard.team (no delete)
             $supportPatterns = [
-                // Leads
                 'lead.index', 'lead.list', 'lead.viewAny', 'lead.view', 'lead.show',
                 'lead.create', 'lead.store', 'lead.update', 'lead.edit',
 
-                // Deals (can move stage + view)
                 'deal.index', 'deal.list', 'deal.viewAny', 'deal.view', 'deal.show',
                 'deal.updateStage', 'deal.stage', 'deal.stage.update',
 
-                // Activities full (log calls/whatsapp etc.)
                 'activity.*',
 
-                // Client read
                 'client.index', 'client.list', 'client.viewAny', 'client.view', 'client.show',
 
-                // Renewals read (support can see due list)
                 'service.index', 'service.list', 'service.viewAny', 'service.view', 'service.show',
                 'renewal.index', 'renewal.list', 'renewal.viewAny', 'renewal.view', 'renewal.show',
 
@@ -123,11 +128,13 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         });
 
-        // Optional: assign Owner role to first user if user exists and has Spatie trait methods.
+        // Optional: assign Owner role to first user if possible (safe)
         $this->assignOwnerToFirstUserIfPossible($guard);
 
         // Clear cache again
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->command?->info('RolesAndPermissionsSeeder completed successfully.');
     }
 
     private function role(string $guard, string $name): ?Role
@@ -138,15 +145,9 @@ class RolesAndPermissionsSeeder extends Seeder
             ->first();
     }
 
-    /**
-     * Build ALL permissions needed:
-     * - Spec minimum permissions (lead.* etc) + dashboard.owner/team
-     * - Granular CRUD permissions per module (index/show/create/update/delete/restore/forceDelete etc)
-     * - Existing modules permissions (Clients/Projects/Tasks/Invoices/Payments/Employees/Attendance…)
-     */
     private function buildAllPermissions(): array
     {
-        // Modules from spec (Minimum ERP)
+        // Spec modules (Minimum ERP)
         $minimumModules = [
             'lead', 'deal', 'activity',
             'project', 'task',
@@ -155,7 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'service', 'renewal',
         ];
 
-        // Existing modules in this ERP base (spec says these exist)
+        // Existing base modules in this ERP
         $existingBaseModules = [
             'client', 'client_contact', 'client_note',
             'department', 'designation', 'employee',
@@ -164,15 +165,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'payment_method',
             'invoice_item', 'invoice_item_field',
             'tax_rule',
-            // HR add-ons from migrations list
             'employee_history', 'employee_document', 'skill', 'employee_skill',
             'shift', 'employee_shift',
             'employee_dependent', 'employee_resignation', 'employee_disciplinary_action',
-            // other possible admin/support areas
             'discount_type',
         ];
 
-        // Admin/system modules (Owner-only typically)
+        // System/admin modules
         $systemModules = [
             'user', 'role', 'permission', 'setting',
             'report',
@@ -182,26 +181,23 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $permissions = [];
 
-        // CRUD-like permissions (create BOTH wildcard and granular so you can use whichever in middleware/checks)
         foreach ($modules as $module) {
             $permissions = array_merge($permissions, $this->crudPermissions($module));
         }
 
-        // Dashboard permissions (spec)
+        // Dashboard (spec)
         $permissions[] = 'dashboard.*';
         $permissions[] = 'dashboard.owner';
         $permissions[] = 'dashboard.team';
 
-        // Special actions (commonly used in controllers)
+        // Special actions
         $permissions = array_merge($permissions, [
-            // Deals
             'deal.updateStage',
             'deal.stage',
             'deal.stage.update',
             'deal.markWon',
             'deal.markLost',
 
-            // Tasks / Timelog timers (spec mentions start/stop; pause/resume idea also included)
             'task.timer.start',
             'task.timer.stop',
             'task.timer.pause',
@@ -212,15 +208,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'timelog.pause',
             'timelog.resume',
 
-            // Renewals/invoice generation
             'service.renewals.generateInvoice',
             'service.renewal.generateInvoice',
             'renewal.generateInvoice',
         ]);
 
-        // Make unique + sorted for stable seeding
         $permissions = array_values(array_unique(array_filter($permissions)));
-
         sort($permissions);
 
         return $permissions;
@@ -228,18 +221,15 @@ class RolesAndPermissionsSeeder extends Seeder
 
     private function crudPermissions(string $module): array
     {
-        // Wildcard (as spec shows lead.* etc) + granular permissions
         return [
             "{$module}.*",
 
-            // Common index/list/view
             "{$module}.index",
             "{$module}.list",
             "{$module}.viewAny",
             "{$module}.view",
             "{$module}.show",
 
-            // Create/update/delete
             "{$module}.create",
             "{$module}.store",
             "{$module}.edit",
@@ -247,20 +237,14 @@ class RolesAndPermissionsSeeder extends Seeder
             "{$module}.destroy",
             "{$module}.delete",
 
-            // Optional lifecycle
             "{$module}.restore",
             "{$module}.forceDelete",
 
-            // Extra common actions
             "{$module}.export",
             "{$module}.import",
         ];
     }
 
-    /**
-     * Resolve given patterns into real permissions list.
-     * Supports patterns like: lead.*, invoice.view, etc.
-     */
     private function resolveByPatterns(array $patterns, array $allPermissions): array
     {
         $out = [];
@@ -284,7 +268,6 @@ class RolesAndPermissionsSeeder extends Seeder
             return;
         }
 
-        // Ensure it's an Eloquent model
         if (!is_subclass_of($userModel, Model::class)) {
             return;
         }
@@ -295,19 +278,17 @@ class RolesAndPermissionsSeeder extends Seeder
             return;
         }
 
-        // Only if Spatie trait methods exist
         if (!method_exists($user, 'assignRole') || !method_exists($user, 'hasRole')) {
             return;
         }
 
         try {
-            if (!$user->hasRole('Owner', $guard)) {
+            if (!$user->hasRole('Owner')) {
                 $user->assignRole('Owner');
             }
         } catch (\Throwable $e) {
-            // Keep seeder "no error" — don't break seeding if user model isn't fully ready
+            // Never break seeding
             return;
         }
     }
 }
-    

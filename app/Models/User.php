@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Models\Role;
-use Laravel\Jetstream\HasProfilePhoto;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Fortify\TwoFactorAuthenticatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+use Laravel\Jetstream\HasProfilePhoto;
+use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
+
+use Spatie\Permission\Traits\HasRoles;
+use Spatie\Permission\Models\Role as SpatieRole;
 
 class User extends Authenticatable
 {
@@ -19,6 +24,9 @@ class User extends Authenticatable
     use Notifiable;
     use TwoFactorAuthenticatable;
     use SoftDeletes;
+
+    // ✅ This enables syncRoles(), assignRole(), hasRole(), can(), etc.
+    use HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -85,17 +93,23 @@ class User extends Authenticatable
     }
 
     /**
-     * Role relationship (optional)
+     * Optional legacy role relationship.
+     *
+     * NOTE:
+     * - Spatie roles are attached via model_has_roles pivot (HasRoles trait),
+     *   NOT via users.role_id.
+     * - If your database has users.role_id and you still need it, keep this relation.
+     * - If you don't use role_id anymore, you can remove this method later.
      */
-    public function role()
+    public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(SpatieRole::class, 'role_id');
     }
 
     /**
      * Created by (admin)
      */
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
@@ -103,7 +117,7 @@ class User extends Authenticatable
     /**
      * Updated by (admin)
      */
-    public function updater()
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
@@ -111,7 +125,7 @@ class User extends Authenticatable
     /**
      * Scope for active users
      */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }

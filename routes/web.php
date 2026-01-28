@@ -71,6 +71,27 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
+    | ✅ Safe Alias Routes (UI/Sidebar compatibility) - NO BREAKING
+    |--------------------------------------------------------------------------
+    | এগুলো না থাকলে route('time-logs.index') / route('task-statuses.index') ইত্যাদি
+    | থাকলে "Route not defined" হতে পারে।
+    */
+    Route::get('task-statuses', function () {
+        return redirect()->route('tasks.index');
+    })->name('task-statuses.index');
+
+    Route::get('time-logs', function () {
+        // TimeLogController এ index নেই (শুধু start/stop), তাই safe fallback
+        return redirect()->route('tasks.index');
+    })->name('time-logs.index');
+
+    // Project board alias (same controller + same param)
+    Route::get('project-board/{project}', ProjectBoardController::class)
+        ->name('project-board.index')
+        ->middleware('permission:project.view|project.*');
+
+    /*
+    |--------------------------------------------------------------------------
     | Core HR / Admin
     |--------------------------------------------------------------------------
     */
@@ -92,7 +113,27 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
     Route::resource('clients', ClientController::class);
-    Route::resource('client-contacts', ClientContactController::class)->except(['show']);
+
+    /**
+     * ✅ FIX: Client Contacts are CLIENT-SCOPED
+     * Controller signature requires Client $client in every action.
+     * So we define nested routes but keep the existing route names:
+     * client-contacts.* (so existing blades keep working).
+     */
+    Route::get('clients/{client}/contacts', [ClientContactController::class, 'index'])
+        ->name('client-contacts.index');
+    Route::get('clients/{client}/contacts/create', [ClientContactController::class, 'create'])
+        ->name('client-contacts.create');
+    Route::post('clients/{client}/contacts', [ClientContactController::class, 'store'])
+        ->name('client-contacts.store');
+    Route::get('clients/{client}/contacts/{clientContact}/edit', [ClientContactController::class, 'edit'])
+        ->name('client-contacts.edit');
+    Route::put('clients/{client}/contacts/{clientContact}', [ClientContactController::class, 'update'])
+        ->name('client-contacts.update');
+    Route::delete('clients/{client}/contacts/{clientContact}', [ClientContactController::class, 'destroy'])
+        ->name('client-contacts.destroy');
+
+    // Client Notes are global CRUD (no client param required)
     Route::resource('client-notes', ClientNoteController::class)->except(['show']);
 
     /*
@@ -141,10 +182,7 @@ Route::middleware([
     Route::resource('payments', PaymentController::class);
     Route::resource('expenses', ExpenseController::class);
 
-    // ✅ Missing before: Item Categories
     Route::resource('item-categories', ItemCategoryController::class);
-
-    // ✅ Missing before: Terms & Conditions
     Route::resource('terms', TermAndConditionController::class);
 
     /*
@@ -163,12 +201,8 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
     Route::resource('services', ServiceController::class);
-
-    // ✅ Missing before: Renewals list/show/update UI routes
-    // Note: only these actions are added to avoid guessing controller methods.
     Route::resource('renewals', ServiceRenewalController::class)->only(['index', 'show', 'update']);
 
-    // Existing action: generate invoice from a service renewal action
     Route::post(
         'services/{service}/renewals/generate-invoice',
         [ServiceRenewalController::class, 'generateInvoice']
@@ -184,17 +218,15 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | Activities (FINAL, CLEAN, NO CONFLICT)
+    | Activities
     |--------------------------------------------------------------------------
     */
-    // Read (UI)
     Route::get('activities', [ActivityPageController::class, 'index'])
         ->name('activities.index');
 
     Route::get('activities/{activity}', [ActivityPageController::class, 'show'])
         ->name('activities.show');
 
-    // Write (Actions)
     Route::post('activities', [ActivityController::class, 'store'])
         ->name('activities.store');
 
@@ -206,7 +238,7 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
-    | Time Logs
+    | Time Logs (Timer only: start/stop)
     |--------------------------------------------------------------------------
     */
     Route::post('tasks/{task}/timer/start', [TimeLogController::class, 'start'])
