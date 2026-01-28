@@ -38,6 +38,8 @@ class DealStoreRequest extends FormRequest
             'probability' => ['nullable', 'integer', 'min:0', 'max:100'],
             'expected_close_date' => ['nullable', 'date'],
             'lost_reason' => ['nullable', 'string', 'max:255'],
+            'owner_id' => ['prohibited'],
+
         ];
     }
 

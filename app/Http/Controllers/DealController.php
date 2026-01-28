@@ -16,6 +16,19 @@ use Illuminate\View\View;
 
 class DealController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+
+        // Read
+        $this->middleware('permission:deal.view|deal.*')->only(['index', 'show', 'pipeline']);
+
+        // Write
+        $this->middleware('permission:deal.create|deal.*')->only(['create', 'store']);
+        $this->middleware('permission:deal.edit|deal.*')->only(['edit', 'update', 'updateStage']);
+        $this->middleware('permission:deal.delete|deal.*')->only(['destroy']);
+    }
+
     public function index(Request $request): View
     {
         $perPage = (int) $request->input('per_page', 15);
@@ -51,7 +64,19 @@ class DealController extends Controller
         $leads = Lead::query()->select(['id', 'name'])->orderBy('name')->get();
         $clients = Client::query()->select(['id', 'name'])->orderBy('name')->get();
 
-        return view('deals.index', compact('deals', 'stages', 'leads', 'clients', 'q', 'stage', 'leadId', 'clientId', 'closeFrom', 'closeTo', 'perPage'));
+        return view('deals.index', compact(
+            'deals',
+            'stages',
+            'leads',
+            'clients',
+            'q',
+            'stage',
+            'leadId',
+            'clientId',
+            'closeFrom',
+            'closeTo',
+            'perPage'
+        ));
     }
 
     public function create(): View
@@ -68,10 +93,19 @@ class DealController extends Controller
     {
         $data = $request->validated();
 
+        // ✅ Security: do not trust incoming owner_id
+        unset($data['owner_id']);
+
         $deal = new Deal();
         $deal->fill($data);
 
-        $this->applyStageSideEffects($deal, (string) $deal->stage, null);
+        // ✅ Mandatory: owner_id auto set (prevents "save hocche na" when DB requires it)
+        $deal->owner_id = $request->user()->id;
+
+        // Stage side-effects (won_at/lost_at/lost_reason)
+        $lostReason = $data['lost_reason'] ?? null;
+        $this->applyStageSideEffects($deal, (string) $deal->stage, $lostReason);
+
         $deal->save();
 
         // ✅ Mandatory: deal won automation (idempotent service)
@@ -111,9 +145,14 @@ class DealController extends Controller
     {
         $data = $request->validated();
 
+        // ✅ Security: never allow owner change silently
+        unset($data['owner_id']);
+
         $deal->fill($data);
 
-        $this->applyStageSideEffects($deal, (string) $deal->stage, null);
+        $lostReason = $data['lost_reason'] ?? $deal->lost_reason;
+        $this->applyStageSideEffects($deal, (string) $deal->stage, $lostReason);
+
         $deal->save();
 
         // ✅ Mandatory: deal won automation (idempotent)
@@ -171,7 +210,9 @@ class DealController extends Controller
         $lostReason = $data['lost_reason'] ?? null;
 
         $deal->stage = $stage;
+
         $this->applyStageSideEffects($deal, $stage, $lostReason);
+
         $deal->save();
 
         // ✅ Mandatory: deal won automation (idempotent)

@@ -27,6 +27,11 @@ class Deal extends Model
         self::STAGE_LOST,
     ];
 
+    /**
+     * ✅ Only business fields are mass assignable.
+     * Security fields like owner_id/created_by/updated_by should be set by code (controller/observer),
+     * not by user input.
+     */
     protected $fillable = [
         'title',
         'lead_id',
@@ -43,10 +48,20 @@ class Deal extends Model
         'won_at',
         'lost_at',
         'lost_reason',
+    ];
 
+    /**
+     * ✅ Guard internal/security fields.
+     */
+    protected $guarded = [
+        'id',
         'owner_id',
         'created_by',
         'updated_by',
+    ];
+
+    protected $attributes = [
+        'stage' => self::STAGE_NEW,
     ];
 
     protected $casts = [
@@ -97,10 +112,22 @@ class Deal extends Model
         return $this->morphMany(Activity::class, 'actionable');
     }
 
+    /**
+     * Deals with expected close date due on/before given date.
+     */
     public function scopeExpectedCloseDue(Builder $query, ?\DateTimeInterface $date = null): Builder
     {
         $date = $date ?: now()->toDate();
+
         return $query->whereNotNull('expected_close_date')
-            ->where('expected_close_date', '<=', $date);
+            ->whereDate('expected_close_date', '<=', $date);
+    }
+
+    /**
+     * Helpful scope for filtering by stage.
+     */
+    public function scopeStage(Builder $query, string $stage): Builder
+    {
+        return $query->where('stage', $stage);
     }
 }
