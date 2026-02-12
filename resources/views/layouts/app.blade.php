@@ -126,174 +126,162 @@
 </body>
 
 
-
-{{-- Darkmood Switcher --}}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+
+        /* =========================
+            DARK MODE SWITCHER
+        ========================== */
         const themeToggleBtn = document.getElementById("theme-toggle");
         const darkIcon = document.getElementById("theme-toggle-dark-icon");
         const lightIcon = document.getElementById("theme-toggle-light-icon");
 
-        // Show correct icon on load
-        if (
-            localStorage.getItem("color-theme") === "dark" ||
-            (!("color-theme" in localStorage) &&
-                window.matchMedia("(prefers-color-scheme: dark)").matches)
-        ) {
-            document.documentElement.classList.add("dark");
-            darkIcon.classList.remove("hidden");
-        } else {
-            document.documentElement.classList.remove("dark");
-            lightIcon.classList.remove("hidden");
+        if (themeToggleBtn && darkIcon && lightIcon) {
+            // Show correct icon on load
+            if (
+                localStorage.getItem("color-theme") === "dark" ||
+                (!("color-theme" in localStorage) &&
+                    window.matchMedia("(prefers-color-scheme: dark)").matches)
+            ) {
+                document.documentElement.classList.add("dark");
+                darkIcon.classList.remove("hidden");
+                lightIcon.classList.add("hidden");
+            } else {
+                document.documentElement.classList.remove("dark");
+                lightIcon.classList.remove("hidden");
+                darkIcon.classList.add("hidden");
+            }
+
+            // Toggle button click
+            themeToggleBtn.addEventListener("click", function() {
+                darkIcon.classList.toggle("hidden");
+                lightIcon.classList.toggle("hidden");
+
+                if (localStorage.getItem("color-theme")) {
+                    if (localStorage.getItem("color-theme") === "light") {
+                        document.documentElement.classList.add("dark");
+                        localStorage.setItem("color-theme", "dark");
+                    } else {
+                        document.documentElement.classList.remove("dark");
+                        localStorage.setItem("color-theme", "light");
+                    }
+                } else {
+                    if (document.documentElement.classList.contains("dark")) {
+                        document.documentElement.classList.remove("dark");
+                        localStorage.setItem("color-theme", "light");
+                    } else {
+                        document.documentElement.classList.add("dark");
+                        localStorage.setItem("color-theme", "dark");
+                    }
+                }
+            });
         }
 
-        // Toggle button click
-        themeToggleBtn.addEventListener("click", function() {
-            darkIcon.classList.toggle("hidden");
-            lightIcon.classList.toggle("hidden");
-
-            if (localStorage.getItem("color-theme")) {
-                if (localStorage.getItem("color-theme") === "light") {
-                    document.documentElement.classList.add("dark");
-                    localStorage.setItem("color-theme", "dark");
-                } else {
-                    document.documentElement.classList.remove("dark");
-                    localStorage.setItem("color-theme", "light");
-                }
-            } else {
-                if (document.documentElement.classList.contains("dark")) {
-                    document.documentElement.classList.remove("dark");
-                    localStorage.setItem("color-theme", "light");
-                } else {
-                    document.documentElement.classList.add("dark");
-                    localStorage.setItem("color-theme", "dark");
-                }
-            }
-        });
-    });
-</script>
-
-
-{{-- Side bar --}}
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-
+        /* =========================
+            SIDEBAR (Hover + Pin + Mobile Slide)
+        ========================== */
         const sidebar = document.getElementById("sidebar");
         const menuText = document.querySelectorAll(".menu-text");
         const toggleButton = document.getElementById("toggle-button");
         const content = document.getElementById("content");
 
-        let isSidebarOpen = false;
-        updateSidebar();
+        if (!sidebar || !toggleButton || !content) return;
 
-        // ✅ Toggle Sidebar on Click
+        const STORAGE_KEY = "sidebar_pinned";
+        let isPinned = localStorage.getItem(STORAGE_KEY) === "1"; // Desktop pin
+        let isMobileOpen = false; // Mobile slide open state
+
+        // ✅ Apply initial state immediately
+        applyState();
+
+        // ✅ Toggle button click: Mobile slide OR Desktop pin/unpin
         toggleButton.addEventListener("click", function(event) {
             event.stopPropagation();
-            isSidebarOpen = !isSidebarOpen;
-            updateSidebar();
+
             if (window.innerWidth <= 640) {
-                sidebar.classList.toggle("open");
+                // Mobile: slide open/close
+                isMobileOpen = !isMobileOpen;
+                sidebar.classList.toggle("open", isMobileOpen);
+                return;
             }
+
+            // Desktop: pin/unpin
+            isPinned = !isPinned;
+            localStorage.setItem(STORAGE_KEY, isPinned ? "1" : "0");
+            applyState();
         });
 
-        // ✅ Close Sidebar on Body Click (for small devices)
+        // ✅ Close mobile sidebar on outside click
         document.addEventListener("click", function(event) {
-            if (window.innerWidth <= 640 && isSidebarOpen && !sidebar.contains(event.target) && event
-                .target !== toggleButton) {
-                sidebar.style.transition = "transform 0.3s ease-in-out"; // Smooth animation
+            if (window.innerWidth > 640) return;
+            if (!isMobileOpen) return;
+
+            if (!sidebar.contains(event.target) && event.target !== toggleButton) {
+                sidebar.style.transition = "transform 0.3s ease-in-out";
                 sidebar.classList.remove("open");
-                isSidebarOpen = false;
-                updateSidebar();
+                isMobileOpen = false;
             }
         });
 
-        // ✅ Expand Sidebar on Hover (if not manually opened)
+        // ✅ Hover expand (Desktop only, only when NOT pinned)
         sidebar.addEventListener("mouseenter", function() {
-            if (!isSidebarOpen) {
+            if (window.innerWidth <= 640) return;
+            if (isPinned) return;
+
+            setExpanded(true);
+        });
+
+        // ✅ Hover collapse (Desktop only, only when NOT pinned)
+        sidebar.addEventListener("mouseleave", function() {
+            if (window.innerWidth <= 640) return;
+            if (isPinned) return;
+
+            setExpanded(false);
+        });
+
+        // ✅ Keep correct layout on resize
+        window.addEventListener("resize", function() {
+            // Reset mobile state when moving to desktop
+            if (window.innerWidth > 640) {
+                sidebar.classList.remove("open");
+                isMobileOpen = false;
+                applyState();
+            }
+        });
+
+        // ------------------------
+        // Helpers
+        // ------------------------
+        function applyState() {
+            // Mobile: do not force width classes here; slide is handled by .open
+            if (window.innerWidth <= 640) return;
+
+            // Desktop: pinned => expanded, not pinned => collapsed
+            setExpanded(isPinned);
+        }
+
+        function setExpanded(expanded) {
+            if (expanded) {
                 sidebar.classList.add("w-64");
                 sidebar.classList.remove("w-20");
+
                 content.classList.add("sm:ml-64");
                 content.classList.remove("sm:ml-20");
-                menuText.forEach(text => text.classList.remove("hidden"));
-            }
-        });
 
-        // ✅ Collapse Sidebar on Mouse Leave (if not manually opened)
-        sidebar.addEventListener("mouseleave", function() {
-            if (!isSidebarOpen) {
-                sidebar.classList.add("w-20");
-                sidebar.classList.remove("w-64");
-                content.classList.add("sm:ml-20");
-                content.classList.remove("sm:ml-64");
-                menuText.forEach(text => text.classList.add("hidden"));
-            }
-        });
-
-        // ✅ Close Sidebar when clicking outside (Smooth Animation)
-        // document.addEventListener("click", function(event) {
-        //     if (!profileDropdown.contains(event.target) && event.target !== profileButton) {
-        //         profileDropdown.classList.add("hidden");
-        //         isDropdownOpen = false;
-
-        //         // ✅ Sidebar Smoothly Close When Clicking Outside
-        //         if (isSidebarOpen && !sidebar.contains(event.target) && event.target !== toggleButton) {
-        //             sidebar.style.transition = "transform 0.3s ease-in-out"; // Smooth animation
-        //             sidebar.classList.remove("open");
-        //             isSidebarOpen = false;
-        //             updateSidebar();
-        //         }
-        //     }
-        // });
-
-
-
-        // ✅ Function to update sidebar and content size
-        function updateSidebar() {
-            if (isSidebarOpen) {
-                sidebar.classList.add("w-64");
-                sidebar.classList.remove("w-20");
-                if (window.innerWidth > 640) {
-                    content.classList.add("sm:ml-64");
-                    content.classList.remove("sm:ml-20");
-                }
                 menuText.forEach(text => text.classList.remove("hidden"));
             } else {
                 sidebar.classList.add("w-20");
                 sidebar.classList.remove("w-64");
-                if (window.innerWidth > 640) {
-                    content.classList.add("sm:ml-20");
-                    content.classList.remove("sm:ml-64");
-                }
+
+                content.classList.add("sm:ml-20");
+                content.classList.remove("sm:ml-64");
+
                 menuText.forEach(text => text.classList.add("hidden"));
             }
         }
     });
 </script>
 
-{{-- Drop Down menu --}}
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const toggleButtons = document.querySelectorAll("[data-collapse-toggle]");
-
-        toggleButtons.forEach(function(btn) {
-            const targetId = btn.getAttribute("data-collapse-toggle");
-            const targetElement = document.getElementById(targetId);
-
-            if (targetElement) {
-                btn.addEventListener("click", function() {
-                    // Toggle hidden class
-                    targetElement.classList.toggle("hidden");
-
-                    // Optionally: toggle rotate class on arrow icon (if any)
-                    const arrowIcon = btn.querySelector("svg:last-child");
-                    if (arrowIcon) {
-                        arrowIcon.classList.toggle("rotate-180");
-                    }
-                });
-            }
-        });
-    });
-</script>
 
 
 </html>
