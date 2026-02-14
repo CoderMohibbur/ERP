@@ -15,7 +15,10 @@ class ClientController extends Controller
 {
     public function __construct()
     {
+        // Read
         $this->middleware('permission:client.view|client.*')->only(['index', 'show']);
+
+        // Write
         $this->middleware('permission:client.create|client.*')->only(['create', 'store']);
         $this->middleware('permission:client.edit|client.*')->only(['edit', 'update']);
         $this->middleware('permission:client.delete|client.*')->only(['destroy']);
@@ -23,21 +26,38 @@ class ClientController extends Controller
 
     /**
      * Display a listing of clients.
+     * - supports status filter
+     * - supports q/search filter (name/email/phone/company_name)
      */
     public function index(Request $request): View
     {
         $query = Client::query();
 
-        // 🔍 Optional search by name/email/company_name
-        if ($request->filled('search')) {
-            $search = trim((string) $request->input('search'));
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('company_name', 'like', "%{$search}%");
+        // ✅ Status filter (new suggestion)
+        if ($request->filled('status')) {
+            $status = trim((string) $request->input('status'));
+            $query->where('status', $status);
+        }
+
+        // ✅ Unified search: accept both `q` (suggestion) and `search` (current)
+        $searchTerm = null;
+
+        if ($request->filled('q')) {
+            $searchTerm = trim((string) $request->input('q'));
+        } elseif ($request->filled('search')) {
+            $searchTerm = trim((string) $request->input('search'));
+        }
+
+        if (!empty($searchTerm)) {
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('email', 'like', "%{$searchTerm}%")
+                    ->orWhere('phone', 'like', "%{$searchTerm}%")
+                    ->orWhere('company_name', 'like', "%{$searchTerm}%");
             });
         }
 
+        // ✅ scalable: latest + pagination + preserve query string
         $clients = $query->latest()->paginate(15)->withQueryString();
 
         return view('clients.index', compact('clients'));
@@ -57,20 +77,31 @@ class ClientController extends Controller
     public function store(StoreClientRequest $request): RedirectResponse
     {
         $data = $this->normalizeClientPayload($request->validated());
-
         $data['created_by'] = Auth::id();
 
-        Client::create($data);
+        $client = Client::create($data);
 
-        return redirect()->route('clients.index')->with('success', 'Client created successfully.');
+        return redirect()
+            ->route('clients.show', $client)
+            ->with('success', 'Client created successfully.');
     }
 
     /**
-     * Show a single client (optional if you have route/view).
+     * Show a single client + related tabs (contacts/notes) + activities timeline.
      */
     public function show(Client $client): View
     {
-        return view('clients.show', compact('client'));
+        // ✅ scalable eager loading (only if not loaded)
+        $client->loadMissing(['contacts', 'notes']);
+
+        // ✅ Activities for this client (via relation; supports morphMap safely)
+        $activities = $client->activities()
+            ->with(['actor'])
+            ->latest('activity_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('clients.show', compact('client', 'activities'));
     }
 
     /**
@@ -87,12 +118,13 @@ class ClientController extends Controller
     public function update(UpdateClientRequest $request, Client $client): RedirectResponse
     {
         $data = $this->normalizeClientPayload($request->validated());
-
         $data['updated_by'] = Auth::id();
 
         $client->update($data);
 
-        return redirect()->route('clients.index')->with('success', 'Client updated successfully.');
+        return redirect()
+            ->route('clients.show', $client)
+            ->with('success', 'Client updated successfully.');
     }
 
     /**
@@ -102,7 +134,9 @@ class ClientController extends Controller
     {
         $client->delete();
 
-        return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
+        return redirect()
+            ->route('clients.index')
+            ->with('success', 'Client deleted successfully.');
     }
 
     /**

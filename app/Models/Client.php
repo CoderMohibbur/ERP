@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -86,16 +85,28 @@ class Client extends Model
         $this->custom_fields = $custom;
     }
 
-
-    // app/Models/Client.php
-
+    /**
+     * 🔗 Client Contacts
+     */
     public function contacts()
     {
-        return $this->hasMany(\App\Models\ClientContact::class);
+        return $this->hasMany(ClientContact::class);
     }
 
+    /**
+     * 🔗 Client Notes
+     */
     public function notes()
     {
         return $this->hasMany(ClientNote::class);
+    }
+
+    /**
+     * ✅ Activities (Calls/Meetings/Followups) for this Client
+     * activities.actionable_type = Client::class
+     */
+    public function activities()
+    {
+        return $this->morphMany(Activity::class, 'actionable');
     }
 }

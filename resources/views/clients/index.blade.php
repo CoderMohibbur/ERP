@@ -46,21 +46,36 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
+
+                            {{-- ✅ Show --}}
+                            <a href="{{ route('clients.show', $client->id) }}"
+                                class="px-3 py-1.5 rounded-md text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                                Show
+                            </a>
+
                             {{-- Contacts --}}
                             <a href="{{ route('client-contacts.index', $client) }}"
                                 class="px-3 py-1.5 rounded-md text-sm border border-gray-200 hover:bg-gray-50
-                  dark:border-white/10 dark:hover:bg-white/5">
+        dark:border-white/10 dark:hover:bg-white/5">
                                 Contacts
                             </a>
+
+                            {{-- Edit --}}
                             <a href="{{ route('clients.edit', $client->id) }}"
-                                class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Edit</a>
+                                class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+                                Edit
+                            </a>
+
+                            {{-- Delete --}}
                             <form action="{{ route('clients.destroy', $client->id) }}" method="POST" class="inline">
-                                @csrf @method('DELETE')
+                                @csrf
+                                @method('DELETE')
                                 <button onclick="return confirm('Are you sure?')"
                                     class="text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium">
                                     Delete
                                 </button>
                             </form>
+
                         </td>
                     </tr>
                 @empty
