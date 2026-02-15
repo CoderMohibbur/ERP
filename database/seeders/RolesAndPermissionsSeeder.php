@@ -190,6 +190,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $permissions[] = 'dashboard.owner';
         $permissions[] = 'dashboard.team';
 
+        // ✅ Lead conversion
+        $permissions[] = 'lead.convert';
+
         // Special actions
         $permissions = array_merge($permissions, [
             'deal.updateStage',
