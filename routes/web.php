@@ -30,8 +30,6 @@ use App\Http\Controllers\{
     EmployeeResignationController,
     EmployeeDisciplinaryActionController,
     TaxRuleController,
-
-    // Phase-0 CRM + Finance
     LeadController,
     DealController,
     ServiceController,
@@ -39,14 +37,12 @@ use App\Http\Controllers\{
     OwnerDashboardController,
     TimeLogController,
     ServiceRenewalController,
-
-    // Activities
     ActivityController,
     ActivityPageController,
-
     ProjectBoardController,
     TaskStatusController,
 };
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -191,6 +187,8 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
     Route::resource('leads', LeadController::class);
+    Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])
+    ->name('leads.convert');
     Route::resource('deals', DealController::class);
     Route::get('deals-pipeline', [DealController::class, 'pipeline'])->name('deals.pipeline');
     Route::post('deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.stage');
